@@ -1,1 +1,1 @@
-# gss_projs
+GeoBC Geospatial Services projects.
