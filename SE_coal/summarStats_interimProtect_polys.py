@@ -1,6 +1,6 @@
 """
-This script create summary statistics for SE Coal 
-stewardship project polygons.
+This script is developed for SE Coal  stewardship project
+It generates summary statistics for the interim protection polygons.
 """
 
 import warnings
@@ -15,29 +15,39 @@ from shapely import wkb
 from datetime import datetime
 
 
-def get_db_cnxinfo (dbname='BCGW'):
-    """ Retrieves db connection params from the config file"""
-    
-    with open(r'H:\config\db_config.json', 'r') as file:
-        data = json.load(file)
+class OracleConnector:
+    def __init__(self, dbname='BCGW'):
+        self.dbname = dbname
+        self.cnxinfo = self.get_db_cnxinfo()
+
+    def get_db_cnxinfo(self):
+        """ Retrieves db connection params from the config file"""
+        with open(r'H:\config\db_config.json', 'r') as file:
+            data = json.load(file)
         
-    if dbname in data:
-        cnxinfo = data[dbname]
-        return cnxinfo
+        if self.dbname in data:
+            return data[self.dbname]
+        
+        raise KeyError(f"Database '{self.dbname}' not found.")
     
-    raise KeyError(f"Database '{dbname}' not found.")
-    
+    def connect_to_db(self):
+        """ Returns a connection and cursor to Oracle database"""
+        try:
+            self.connection = cx_Oracle.connect(self.cnxinfo['username'], 
+                                                self.cnxinfo['password'], 
+                                                self.cnxinfo['hostname'], 
+                                                encoding="UTF-8")
+            self.cursor = self.connection.cursor()
+            print("....Successfully connected to the database")
+        except Exception as e:
+            raise Exception('....Connection failed! Please check your login parameters') from e
 
-def connect_to_DB (username,password,hostname):
-    """ Returns a connection and cursor to Oracle database"""
-    try:
-        connection = cx_Oracle.connect(username, password, hostname, encoding="UTF-8")
-        cursor = connection.cursor()
-        print  ("....Successffuly connected to the database")
-    except:
-        raise Exception('....Connection failed! Please check your login parameters')
-
-    return connection, cursor
+    def disconnect_db(self):
+        if hasattr(self, 'cursor') and self.cursor:
+            self.cursor.close()
+        if hasattr(self, 'connection') and self.connection:
+            self.connection.close()
+            print("....Disconnected from the database")
 
 
 def read_query(connection,cursor,query,bvars):
@@ -162,11 +172,10 @@ def generate_report (workspace, df_list, sheet_list,filename):
 def run_analysis ():
     """ Runs statusing"""
     print ('Connecting to BCGW.')
-    cnxinfo= get_db_cnxinfo(dbname='BCGW')
-    hostname = cnxinfo['hostname']
-    username= cnxinfo['username']
-    password= cnxinfo['password']
-    connection, cursor = connect_to_DB (username,password,hostname)
+    oracle_connector = OracleConnector()
+    oracle_connector.connect_to_db()
+    connection= oracle_connector.connection
+    cursor= oracle_connector.cursor
     
     print ('Reading tool inputs.')
     workspace = r'W:\srm\kam\Workarea\ksc_proj\LandUsePlanning\20240304_SE_Coal_Stewardship'
@@ -312,5 +321,7 @@ def run_analysis ():
     sheet_list = ['vertical', 'horizontal']
     outloc= os.path.join(workspace, 'output')
     generate_report (outloc, df_list, sheet_list ,filename)
+    
+    oracle_connector.disconnect_db()
     
 run_analysis ()
