@@ -31,7 +31,7 @@ class OracleConnector:
         raise KeyError(f"Database '{self.dbname}' not found.")
     
     def connect_to_db(self):
-        """ Returns a connection and cursor to Oracle database"""
+        """ Connects to Oracle DB and create a cursor"""
         try:
             self.connection = cx_Oracle.connect(self.cnxinfo['username'], 
                                                 self.cnxinfo['password'], 
@@ -43,6 +43,7 @@ class OracleConnector:
             raise Exception('....Connection failed! Please check your login parameters') from e
 
     def disconnect_db(self):
+        """Close the Oracle connection and cursor"""
         if hasattr(self, 'cursor') and self.cursor:
             self.cursor.close()
         if hasattr(self, 'connection') and self.connection:
