@@ -14,7 +14,6 @@ import geopandas as gpd
 from shapely import wkb
 from datetime import datetime
 
-
 class OracleConnector:
     def __init__(self, dbname='BCGW'):
         self.dbname = dbname
@@ -38,9 +37,9 @@ class OracleConnector:
                                                 self.cnxinfo['hostname'], 
                                                 encoding="UTF-8")
             self.cursor = self.connection.cursor()
-            print("....Successfully connected to the database")
+            print  ("..Successffuly connected to the database")
         except Exception as e:
-            raise Exception('....Connection failed! Please check your login parameters') from e
+            raise Exception(f'..Connection failed: {e}')
 
     def disconnect_db(self):
         """Close the Oracle connection and cursor"""
