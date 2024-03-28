@@ -146,8 +146,14 @@ if __name__ == "__main__":
     gdf_bi= process_habitat_polys ('Chase', bi_folder)
     
     print ('\nAdding data to duckdb')
-    gdf_polys= pd.concat([gdf_cs, gdf_wv], ignore_index=True)
+    gdf_polys= pd.concat([gdf_cs, gdf_wv, gdf_bi], ignore_index=True)
     gdf_polys.reset_index(drop=True, inplace= True)
+    
+    
+    #################### for second analysis: without Calving Layers #############################
+    #gdf_polys = gdf_polys.loc[~gdf_polys['Source'].str.contains('calving')]
+    #################### for second analysis: without Calving Layers #############################
+    
     
     gdf_to_duckdb (dckCnx, gdf_blks, 'bcts_blocks')
     gdf_to_duckdb (dckCnx, gdf_polys, 'habitat_polys')
@@ -243,9 +249,9 @@ if __name__ == "__main__":
     filename = today + '_bcts_planningBlocks_caribouHabitat_stats'
     df_list= dfs + dfs_stats
     sheet_list = ['overlap list - no buffer',
-              'overlap list - buffer',
-              'overlap stats - no buffer',
-              'overlap stats - buffer']
+                  'overlap list - buffer',
+                  'overlap stats - no buffer',
+                  'overlap stats - buffer']
     
     generate_report (out_loc, df_list, sheet_list,filename)
     
@@ -255,5 +261,5 @@ if __name__ == "__main__":
     t_sec = round(finish_t-start_t)
     mins = int (t_sec/60)
     secs = int (t_sec%60)
-    print ('\nProcessing Completed in {} minutes and {} seconds'.format (mins,secs))   
+    print (f'\nProcessing Completed in {mins} minutes and {secs} seconds')   
     
