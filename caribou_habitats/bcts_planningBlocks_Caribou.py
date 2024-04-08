@@ -149,10 +149,13 @@ if __name__ == "__main__":
     gdf_polys= pd.concat([gdf_cs, gdf_wv, gdf_bi], ignore_index=True)
     gdf_polys.reset_index(drop=True, inplace= True)
     
+    #################### without Matrix Layers #############################
+    #gdf_polys = gdf_polys.loc[~gdf_polys['Source'].str.contains('Matrix')]
+    #################### without Matrix Layers #############################
     
-    #################### for second analysis: without Calving Layers #############################
+    #################### without Calving Layers #############################
     #gdf_polys = gdf_polys.loc[~gdf_polys['Source'].str.contains('calving')]
-    #################### for second analysis: without Calving Layers #############################
+    #################### without Calving Layers #############################
     
     
     gdf_to_duckdb (dckCnx, gdf_blks, 'bcts_blocks')
@@ -184,17 +187,17 @@ if __name__ == "__main__":
                 blk.Block_ID,
                 hbt.Range,
                 hbt.Source,
-                blk.Area_ha AS Block_Area_ha,
+                blk.Block_BufArea_ha,
                 ROUND(ST_Area(
                     ST_Intersection(
                         blk.geom_buf, hbt.geometry)::geometry) / 10000.0, 2) AS Overlap_Area_ha,
                 ROUND(((ST_Area(
                     ST_Intersection(
-                        blk.geom_buf, hbt.geometry)::geometry) / 10000.0) / blk.Area_ha) * 100, 1) AS Overlap_pct
+                        blk.geom_buf, hbt.geometry)) / 10000.0) / blk.Block_BufArea_ha) * 100, 1) AS Overlap_pct
             FROM 
                 (SELECT 
                     Block_ID,
-                    Area_ha,
+                    ROUND(ST_Area(ST_Buffer(geometry, 500)) / 10000.0, 2) AS Block_BufArea_ha,
                     ST_Buffer(geometry, 500) AS geom_buf
                  FROM 
                     bcts_blocks) AS blk
@@ -262,4 +265,3 @@ if __name__ == "__main__":
     mins = int (t_sec/60)
     secs = int (t_sec%60)
     print (f'\nProcessing Completed in {mins} minutes and {secs} seconds')   
-    
