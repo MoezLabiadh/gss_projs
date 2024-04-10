@@ -77,6 +77,32 @@ def process_habitat_polys (rng, in_folder):
     return gdf
 
 
+def process_calving_polys (in_folder):
+    """""Returns a gdf of habitat polygons"""
+    polys= []
+    for filename in os.listdir(in_folder):
+         if filename.endswith(".shp"):
+             print(f'..processing {filename}')
+             lyr = os.path.splitext(filename)[0]
+             filepath = os.path.join(in_folder, filename)
+             gdf = gpd.read_file(filepath)
+             
+             gdf['Range']= 'Wolverine & Chase'
+             gdf['Source']= lyr
+             
+             #flatten geometries 3D to 2D
+             _drop_z = lambda geom: wkb.loads(wkb.dumps(geom, output_dimension=2))
+             gdf.geometry = gdf.geometry.transform(_drop_z)
+             
+             gdf= gdf[['Range','Source','geometry']]
+             polys.append(gdf)
+             
+    gdf= pd.concat(polys, ignore_index=True)
+    gdf.reset_index(drop=True, inplace= True)
+    
+    return gdf
+
+
 def gdf_to_duckdb (conn, gdf, table_name):
     """Insert data from a gdf into a duckdb table """
     gdf_wkb= gdf.copy()
@@ -141,16 +167,20 @@ if __name__ == "__main__":
     wv_folder= os.path.join(wks, 'inputs', 'wolverine_polys')
     gdf_wv= process_habitat_polys ('Wolverine', wv_folder)
 
+    print ('\nReading Calving files')
+    cv_folder= os.path.join(wks, 'inputs', 'calving')
+    gdf_cv= process_calving_polys (cv_folder)
+    
     print ('\nReading Biologist files')
     bi_folder= os.path.join(wks, 'inputs', 'biologists_polys')
     gdf_bi= process_habitat_polys ('Chase', bi_folder)
     
     print ('\nAdding data to duckdb')
-    gdf_polys= pd.concat([gdf_cs, gdf_wv, gdf_bi], ignore_index=True)
+    gdf_polys= pd.concat([gdf_cs, gdf_wv, gdf_cv, gdf_bi], ignore_index=True)
     gdf_polys.reset_index(drop=True, inplace= True)
     
     #################### without Matrix Layers #############################
-    #gdf_polys = gdf_polys.loc[~gdf_polys['Source'].str.contains('Matrix')]
+    gdf_polys = gdf_polys.loc[~gdf_polys['Source'].str.contains('Matrix')]
     #################### without Matrix Layers #############################
     
     #################### without Calving Layers #############################
@@ -238,18 +268,18 @@ if __name__ == "__main__":
         Duckdb.disconnect_db()
         
     print('\nExporting results')    
-    out_loc= os.path.join(wks, 'outputs')
+    out_loc= os.path.join(wks, 'outputs', '3rd_run', 'withCalving')
     today = datetime.today().strftime('%Y%m%d')
     
     #shapes
-    shp_name_blk= today + '_bcts_planningBlocks_caribouHabitat_stats.shp'
-    shp_name_buf= today + '_bcts_planningBlocks_caribouHabitat_stats_BUFFERS.shp'
+    shp_name_blk= today + '_bcts_planningBlocks_caribouHabitat_withCalving_stats.shp'
+    shp_name_buf= today + '_bcts_planningBlocks_caribouHabitat_withCalving_stats_BUFFERS.shp'
     
     gpd.GeoDataFrame(gdfs[0]).to_file(os.path.join(out_loc, shp_name_blk))
     gpd.GeoDataFrame(gdfs[1]).to_file(os.path.join(out_loc, shp_name_buf))
 
     #report
-    filename = today + '_bcts_planningBlocks_caribouHabitat_stats'
+    filename = today + '_bcts_planningBlocks_caribouHabitat_withCalving_stats'
     df_list= dfs + dfs_stats
     sheet_list = ['overlap list - no buffer',
                   'overlap list - buffer',
@@ -265,3 +295,4 @@ if __name__ == "__main__":
     mins = int (t_sec/60)
     secs = int (t_sec%60)
     print (f'\nProcessing Completed in {mins} minutes and {secs} seconds')   
+    
