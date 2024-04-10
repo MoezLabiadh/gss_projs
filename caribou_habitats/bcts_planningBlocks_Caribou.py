@@ -148,7 +148,7 @@ def generate_report (workspace, df_list, sheet_list,filename):
 if __name__ == "__main__":
     start_t = timeit.default_timer() #start time  
     
-    wks= r'\\spatialfiles.bcgov\Work\srm\kam\Workarea\ksc_proj\Wildlife\20240326_BCTS_planningBlocks_Caribou_habitats' 
+    wks= r'W:\srm\kam\Workarea\ksc_proj\Wildlife\20240326_BCTS_planningBlocks_Caribou_habitats' 
 
     print ('Connecting to duckdb')
     Duckdb= DuckDBConnector()
