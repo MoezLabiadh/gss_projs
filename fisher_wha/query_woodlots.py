@@ -133,7 +133,7 @@ def load_Orc_sql():
                                      SDO_GEOMETRY(:wkb_aoi, :srid), 'distance=500 unit=m') = 'TRUE'
                     """
 
-    orSql['ofd'] = """
+    orSql['pofd'] = """
         SELECT
             CURRENT_PRIORITY_DEFERRAL_ID,
             SDO_UTIL.TO_WKTGEOMETRY(SHAPE) AS GEOMETRY
@@ -168,17 +168,17 @@ def load_dck_sql():
 
                     """
                     
-    dkSql['wdlts_ofd']="""
+    dkSql['wdlts_pofd']="""
         SELECT
             wdl.MAP_LABEL,
             ROUND(ST_Area(wdl.geometry) / 10000.0, 2) AS WDLT_AREA_HA,
             SUM(ROUND(ST_Area(
                 ST_Intersection(
-                    ofd.geometry, wdl.geometry)) / 10000.0, 2)) AS OFD_AREA_HA
+                    ofd.geometry, wdl.geometry)) / 10000.0, 2)) AS POFD_OVERLAP_AREA_HA
         
         FROM 
             wdlts wdl
-            LEFT JOIN ofd
+            LEFT JOIN pofd ofd
                 ON ST_Intersects(ofd.geometry, wdl.geometry)
                 
         GROUP BY 
@@ -192,7 +192,7 @@ def load_dck_sql():
             ROUND(ST_Area(wdl.geometry) / 10000.0, 2) AS WDLT_AREA_HA,
             SUM(ROUND(ST_Area(
                 ST_Intersection(
-                    fhrw.geometry, wdl.geometry)) / 10000.0, 2)) AS FHRW_AREA_HA
+                    fhrw.geometry, wdl.geometry)) / 10000.0, 2)) AS FHRW_OVERLAP_AREA_HA
         
         FROM 
             wdlts wdl
@@ -315,7 +315,6 @@ def run_duckdb_queries (dckCnx, dict_sqls):
     results= {}
     counter = 1
     for k, v in dict_sqls.items():
-        counter = 1
         print(f'..running query {counter} of {len(dict_sqls)}: {k}')
         results[k]= dckCnx.execute(v).df()
         
@@ -367,7 +366,7 @@ if __name__ == "__main__":
     orcCur= Oracle.cursor
     
     # Connect to duckdb
-    Duckdb= DuckDBConnector(db='wdlt.db')
+    Duckdb= DuckDBConnector()
     Duckdb.connect_to_db()
     dckCnx= Duckdb.conn
     
@@ -405,6 +404,13 @@ if __name__ == "__main__":
     
     
     print ('\nExport the report.')
+    # set very small overlap areas to None 
+    for k, df in rslts.items():
+        for col in df.columns:
+            if 'OVERLAP_AREA' in col:
+                df.loc[df[col] < 0.05, col] = None
+                rslts[k]= df
+                
     ouloc= os.path.join(wks, 'outputs')
     today = datetime.today().strftime('%Y%m%d')
     filename= today + '_Fisher_draftPolys_woodlotsAnalysis'
