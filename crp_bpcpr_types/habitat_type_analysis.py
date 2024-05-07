@@ -273,6 +273,21 @@ def gdf_to_duckdb (dckCnx, loc_dict):
 def load_dck_sql():
     dkSql= {}
 
+    dkSql['hrd_mgt_q']="""
+        SELECT 
+          hrd.HERD_NAME,
+          mgm.MGMT_TYPE,
+          ROUND(ST_Area(ST_Intersection(hrd.geometry, mgm.geometry))/10000, 2) AS OVERLAP_HA
+
+        FROM 
+            herds AS hrd
+            JOIN 
+                mgmt_types AS mgm ON ST_Intersects(hrd.geometry, mgm.geometry)
+        
+        ORDER BY hrd.HERD_NAME
+  
+                    """
+                    
     dkSql['uwr_q']="""
         SELECT 
           hrd.HERD_NAME,
@@ -398,6 +413,7 @@ if __name__ == "__main__":
     print ('\nRead the Mgmt types dataset')   
     pbcpr_gdb= gdb= os.path.join(wks, 'source data' ,'incoming','BorealCaribouRecovery.gdb')
     gdf, gdf_env= process_pbcpr_data (pbcpr_gdb)
+    
     wkb_aoi, srid= get_wkb_srid(gdf_env)
     
     try:
@@ -455,7 +471,15 @@ if __name__ == "__main__":
     
     df.fillna(0, inplace= True)
     
-    df= df[['HERD_NAME', 'MGMT_TYPE', 'UWR_NO_HARVEST', 'WHA_NO_HARVEST', 
+    #add mgmt type area
+    gdf['MGMT_TYPE_AREA_HA']= round(gdf.geometry.area/10000,2)
+    df_mgt= gdf[['MGMT_TYPE','MGMT_TYPE_AREA_HA']]
+    
+    #add herd/mgmt type overlap
+    df_hrd_mgt= q_rslt['hrd_mgt_q']
+    
+    #change col order
+    df= df[['HERD_NAME', 'MGMT_TYPE','UWR_NO_HARVEST', 'WHA_NO_HARVEST', 
             'PRIORITY_DEF_AREA', 'UWR_CNDTL_HARVEST', 'WHA_CNDTL_HARVEST']]
     
     
@@ -463,9 +487,9 @@ if __name__ == "__main__":
     outloc= os.path.join(wks, 'deliverables', 'habitat_types')
     today = datetime.today().strftime('%Y%m%d')
     filename= today + '_borealCaribou_pbcprMgmtTypes'
-  
-    
-    generate_report (outloc, [df], ['SUMMARY'],filename)
+    dfs= [df_mgt, df_hrd_mgt, df]
+    sheets= ['MGMT TYPES', 'HERD-MGMT TYPE OVERLAP', 'ANALYSIS SUMMARY']
+    generate_report (outloc, dfs, sheets, filename)
         
     finish_t = timeit.default_timer() #finish time
     t_sec = round(finish_t-start_t)
