@@ -279,6 +279,7 @@ def gdf_to_duckdb (dckCnx, loc_dict):
 
 def load_dck_sql():
     dkSql= {}
+    '''
     dkSql['thlb_tsr2_mature']="""
         --Drop table if exists
         DROP TABLE IF EXISTS thlb_tsr2_mature;
@@ -293,12 +294,28 @@ def load_dck_sql():
               ROUND(ST_Area(ST_Intersection(vri.geometry, thlb.geometry))/10000,2)  AS THLB_MATURE_HA,
               ST_Intersection(vri.geometry, thlb.geometry) AS geometry
             FROM 
-              vri vri JOIN thlb_tsr2 thlb ON ST_Intersects(vri.geometry, thlb.geometry)
+              vri JOIN thlb_tsr2 thlb ON ST_Intersects(vri.geometry, thlb.geometry)
             WHERE 
               vri.PROJ_AGE_1 >= 80;
-          
                     """
-
+    '''                
+    dkSql['thlb_curr_mature']="""
+        --Drop table if exists
+        DROP TABLE IF EXISTS thlb_curr_mature;
+        
+        --Create table
+        CREATE TABLE thlb_curr_mature AS
+            SELECT 
+              vri.POLYGON_ID AS VRI_POLY_ID,
+              vri.PROJ_AGE_1,
+              thlb.thlb_fact,
+              ROUND(ST_Area(ST_Intersection(vri.geometry, thlb.geometry))/10000,2)  AS THLB_MATURE_HA,
+              ST_Intersection(vri.geometry, thlb.geometry) AS geometry
+            FROM 
+              vri JOIN thlb_curr thlb ON ST_Intersects(vri.geometry, thlb.geometry)
+            WHERE 
+              vri.PROJ_AGE_1 >= 80;
+                    """
                     
     return dkSql
 
@@ -354,14 +371,15 @@ if __name__ == "__main__":
         loc_dict={}
         loc_dict['draft_fisher_polys']= os.path.join(gdb, 'Draft_Fisher_WHA_ALL')
         loc_dict['thlb_tsr2']= os.path.join(gdb, 'thlb_tsr2')
+        loc_dict['thlb_curr']= os.path.join(gdb, 'thlb_current')
         #gdbTables= gdf_to_duckdb (dckCnx, loc_dict)
 
         print ('Run Queries')
         dksql= load_dck_sql()
         rslts= run_duckdb_queries (dckCnx, dksql) 
         
-        df= dckCnx.execute("SELECT* FROM thlb_tsr2_mature").df()
-        df = df.drop(columns=['geometry'])
+        #df= dckCnx.execute("SELECT* FROM thlb_tsr2_mature").df()
+        #df = df.drop(columns=['geometry'])
 
     except Exception as e:
         raise Exception(f"Error occurred: {e}")  
