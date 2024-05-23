@@ -43,6 +43,61 @@ class OracleConnector:
             print("....Disconnected from the database")
 
 
+def load_Orc_sql():
+    orSql= {}
+
+    orSql['ofpd'] = """
+        SELECT 
+            old.CURRENT_PRIORITY_DEFERRAL_ID AS ID,
+            old.ANCIENT_FOREST_IND,
+            old.REMNANT_OLD_ECOSYS_IND,
+            CASE
+                WHEN old.ANCIENT_FOREST_IND = 'Y' AND old.REMNANT_OLD_ECOSYS_IND = 'Y' THEN 'ANCIENT & REMNANT'
+                WHEN old.ANCIENT_FOREST_IND = 'Y' THEN 'ANCIENT FOREST'
+                WHEN old.REMNANT_OLD_ECOSYS_IND = 'Y' THEN 'REMNANT OLD ECOSYS'
+                ELSE 'OLD FOREST'
+            END AS CATEGORY,
+            old.BGC_LABEL,
+            REGEXP_SUBSTR(old.BGC_LABEL, '^[A-Z]+') AS BEC_ZONE,
+            ROUND(SDO_GEOM.SDO_AREA(
+                SDO_GEOM.SDO_INTERSECTION(
+                    old.SHAPE, wsh.GEOMETRY, 0.005), 0.005, 'unit=HECTARE'), 2) AREA_HA
+        FROM WHSE_FOREST_VEGETATION.OGSR_PRIORITY_DEF_AREA_CUR_SP old
+        JOIN WHSE_BASEMAPPING.FWA_WATERSHED_GROUPS_POLY wsh
+            ON SDO_RELATE(old.SHAPE, wsh.GEOMETRY, 'mask=ANYINTERACT') = 'TRUE'
+            AND wsh.WATERSHED_GROUP_CODE = 'THOM'
+                    """
+ 
+    orSql['ogma'] = """
+        SELECT
+            ogm_wshd.LEGAL_OGMA_PROVID AS ID,
+            'OGMA' AS CATEGORY,
+            bec.BGC_LABEL,
+            bec.ZONE AS BEC_ZONE,
+            ROUND(
+                SDO_GEOM.SDO_AREA(
+                        SDO_GEOM.SDO_INTERSECTION(bec.GEOMETRY, ogm_wshd.GEOMETRY, 0.05),
+                    0.05, 'unit=HECTARE'
+                ), 2
+            ) AS AREA_HA
+            
+        FROM
+            (SELECT
+                ogm.LEGAL_OGMA_PROVID,
+                SDO_GEOM.SDO_INTERSECTION(ogm.GEOMETRY, wsh.GEOMETRY, 0.05) AS GEOMETRY
+             FROM  
+                WHSE_LAND_USE_PLANNING.RMP_OGMA_LEGAL_CURRENT_SVW ogm
+                INNER JOIN WHSE_BASEMAPPING.FWA_WATERSHED_GROUPS_POLY wsh
+                    ON SDO_RELATE(ogm.GEOMETRY, wsh.GEOMETRY, 'mask=ANYINTERACT') = 'TRUE'
+                     AND wsh.WATERSHED_GROUP_CODE = 'THOM'
+            )ogm_wshd
+            
+            INNER JOIN WHSE_FOREST_VEGETATION.BEC_BIOGEOCLIMATIC_POLY bec
+                ON SDO_RELATE(bec.GEOMETRY, ogm_wshd.GEOMETRY, 'mask=ANYINTERACT') = 'TRUE'
+                    """
+                    
+    return orSql
+
 def generate_report (workspace, df_list, sheet_list,filename):
     """ Exports dataframes to multi-tab excel spreasheet"""
     outfile= os.path.join(workspace, filename + '.xlsx')
@@ -86,29 +141,15 @@ if __name__ == "__main__":
 
     try:
         print('Execute queries')
-        sql= """
-            SELECT 
-                old.CURRENT_PRIORITY_DEFERRAL_ID,
-                old.ANCIENT_FOREST_IND,
-                old.REMNANT_OLD_ECOSYS_IND,
-                CASE
-                    WHEN old.ANCIENT_FOREST_IND = 'Y' AND old.REMNANT_OLD_ECOSYS_IND = 'Y' THEN 'ANCIENT & REMNANT'
-                    WHEN old.ANCIENT_FOREST_IND = 'Y' THEN 'ANCIENT FOREST'
-                    WHEN old.REMNANT_OLD_ECOSYS_IND = 'Y' THEN 'REMNANT OLD ECOSYS'
-                    ELSE 'OLD FOREST'
-                END AS CATEGORY,
-                old.BGC_LABEL,
-                REGEXP_SUBSTR(old.BGC_LABEL, '^[A-Z]+') AS BEC_ZONE,
-                ROUND(SDO_GEOM.SDO_AREA(
-                    SDO_GEOM.SDO_INTERSECTION(
-                        old.SHAPE, wsh.GEOMETRY, 0.005), 0.005, 'unit=HECTARE'), 2) AREA_HA
-            FROM WHSE_FOREST_VEGETATION.OGSR_PRIORITY_DEF_AREA_CUR_SP old
-            JOIN WHSE_BASEMAPPING.BC_MAJOR_WATERSHEDS wsh
-                ON SDO_RELATE(old.SHAPE, wsh.GEOMETRY, 'mask=ANYINTERACT') = 'TRUE'
-                AND wsh.MAJOR_WATERSHED_SYSTEM = 'Thompson River'
-             """
-        df= pd.read_sql(sql, orcCnx)
-            
+        orSql= load_Orc_sql()
+        print('...old forest def areas')
+        df_ofpd= pd.read_sql(orSql['ofpd'] , orcCnx)
+        
+        print('...ogma')
+        df_ogma= pd.read_sql(orSql['ogma'] , orcCnx)
+        
+        df= pd.concat([df_ofpd, df_ogma])
+        
         df_sum = df.groupby(['CATEGORY', 'BEC_ZONE'])['AREA_HA'].sum().reset_index()
 
     except Exception as e:
