@@ -68,7 +68,7 @@ with rasterio.open(slope_raster) as src:
     # Create a GeoDataFrame
     reclassified_gdf = gpd.GeoDataFrame({'slope_class_id': values, 'geometry': geometries})
     
-    reclassified_gdf.crs= source_crs
+    #reclassified_gdf.crs= source_crs
     
     # Cast slope_class_id to integers
     reclassified_gdf['slope_class_id'] = reclassified_gdf['slope_class_id'].astype(int)
@@ -80,14 +80,14 @@ with rasterio.open(slope_raster) as src:
     reclassified_gdf= reclassified_gdf.loc[reclassified_gdf['slope_class_label']!='NoData']
     
     # Dissolve the GeoDataFrame by 'slope_class_label'
-    dissolved_gdf = reclassified_gdf.dissolve(by='slope_class_label')
+    #dissolved_gdf = reclassified_gdf.dissolve(by='slope_class_label')
 
 
 
 # Export the GeoDataFrame to a geodatabse
 print('Exporting the slope class vector to project gdb')
 out_gdb= os.path.join(wks,'data.gdb')
-dissolved_gdf.to_file(out_gdb, layer= 'slope_classes', driver="OpenFileGDB") 
+reclassified_gdf.to_file(out_gdb, layer= 'slope_class', driver="OpenFileGDB") 
 
 
 finish_t = timeit.default_timer() #finish time
