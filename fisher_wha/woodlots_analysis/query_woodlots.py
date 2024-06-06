@@ -372,7 +372,7 @@ if __name__ == "__main__":
     
     print ('Create an AOI shape.')
     in_gdb= os.path.join(wks, 'inputs', 'data.gdb')
-    gdf_aoi= esri_to_gdf(os.path.join(in_gdb, 'Draft_Fisher_WHA_ALL_AOI'))
+    gdf_aoi= esri_to_gdf(os.path.join(in_gdb, 'POLYGON_AOI'))
     #gdf.to_file(os.path.join(wks, 'tests', 'union.shp'))
     wkb_aoi, srid= get_wkb_srid(gdf_aoi)
     
