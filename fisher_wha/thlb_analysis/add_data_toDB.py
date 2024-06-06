@@ -369,14 +369,15 @@ if __name__ == "__main__":
         print ('\nLoad local datasets')
         
         loc_dict={}
-        loc_dict['draft_fisher_polys']= os.path.join(gdb, 'Draft_Fisher_WHA_ALL')
-        loc_dict['thlb_tsr2']= os.path.join(gdb, 'thlb_tsr2')
-        loc_dict['thlb_curr']= os.path.join(gdb, 'thlb_current')
-        #gdbTables= gdf_to_duckdb (dckCnx, loc_dict)
+        loc_dict['draft_fisher_polys']= os.path.join(gdb, 'Draft_Fisher_WHA_ALL_05JUN2024')
+        #loc_dict['thlb_tsr2']= os.path.join(gdb, 'thlb_tsr2')
+        #loc_dict['thlb_curr']= os.path.join(gdb, 'thlb_current')
+        #loc_dict['slope_class']= os.path.join(gdb, 'slope_class')
+        gdbTables= gdf_to_duckdb (dckCnx, loc_dict)
 
         print ('Run Queries')
         dksql= load_dck_sql()
-        rslts= run_duckdb_queries (dckCnx, dksql) 
+        #rslts= run_duckdb_queries (dckCnx, dksql) 
         
         #df= dckCnx.execute("SELECT* FROM thlb_tsr2_mature").df()
         #df = df.drop(columns=['geometry'])
