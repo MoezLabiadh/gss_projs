@@ -1,3 +1,6 @@
+import warnings
+warnings.simplefilter(action='ignore')
+
 import os
 import timeit
 import duckdb
@@ -41,7 +44,6 @@ def load_dck_sql():
         SELECT 
           poly.DISTRICT,
           poly.POLYGON_ID,
-          poly.REVISED,
           poly.POLYGON_HA,
           thmt.VRI_POLY_ID,
           thmt.PROJ_AGE_1 AS STAND_AGE,
@@ -60,7 +62,6 @@ def load_dck_sql():
         SELECT 
           poly.DISTRICT,
           poly.POLYGON_ID,
-          poly.REVISED,
           poly.POLYGON_HA,
           thmt.VRI_POLY_ID,
           thmt.PROJ_AGE_1 AS STAND_AGE,
@@ -87,10 +88,10 @@ def load_dck_sql():
         SELECT 
           poly.DISTRICT,
           poly.POLYGON_ID,
-          poly.REVISED,
           poly.POLYGON_HA,
           thmt.VRI_POLY_ID,
           thmt.PROJ_AGE_1 AS STAND_AGE,
+          vqo.VLI_POLYGON_NO,
           vqo.REC_EVQO_CODE,
           vqo.SCENIC_AREA_IND,
           thmt.INCLFACT,
@@ -111,7 +112,6 @@ def load_dck_sql():
         SELECT 
           poly.DISTRICT,
           poly.POLYGON_ID,
-          poly.REVISED,
           poly.POLYGON_HA,
           thmt.VRI_POLY_ID,
           thmt.PROJ_AGE_1 AS STAND_AGE,
@@ -128,8 +128,53 @@ def load_dck_sql():
             JOIN 
                 thlb_tsr2_mature AS thmt ON ST_Intersects(poly.geometry, thmt.geometry) 
                     AND ST_Intersects(cofa.geometry, thmt.geometry);
-                    """                    
+                    """      
+                    
+    dkSql['vqo_slp']="""
+          SELECT
+              vqo.VLI_POLYGON_NO,
+              vqo.REC_EVQO_CODE,
+              slp.slope_class_label AS SLOPE_CLASS,
+              SUM(ST_Area(ST_Intersection(vqo.geometry, slp.geometry)))/1000000 AS area_sqkm
+          FROM
+              vqo
+              JOIN slope_class slp
+                  ON ST_Intersects(vqo.geometry, slp.geometry)
+          GROUP BY
+              vqo.VLI_POLYGON_NO,
+              vqo.REC_EVQO_CODE,
+              slp.slope_class_label
+                    """                       
     return dkSql
+
+
+def vqo_thlb_impact_factor(df):
+    """Returns a df of THLB inclusion factors for VQO polygons"""  
+    idx = df.groupby('VLI_POLYGON_NO')['area_sqkm'].idxmax()
+    df= df.loc[idx]
+    df= df[[col for col in df.columns if col != 'area_sqkm']]
+    
+    vac_dict= {'P' : 0,
+               'R' : 0.75,
+               'PR': 4.3,
+               'M' : 12.55}
+    
+    p2p_dict= {'0-10' : 4.68,
+               '10-20': 3.77,
+               '20-30': 3.04,
+               '30-40': 2.45,
+               '40-50': 1.98,
+               '50-60': 1.60,
+               '60-70': 1.29,
+               '70+'  : 1.04}
+    
+    df['VAC']= df['REC_EVQO_CODE'].map(vac_dict)
+    df['P2P']= df['SLOPE_CLASS'].map(p2p_dict)
+    
+    df['VQO_NETDOWN_FACTOR']= round((100 - (df['VAC'] * df['P2P']))/100,2)
+    
+    return df
+
 
 def run_duckdb_queries (dckCnx, dict_sqls):
     """Run duckdb queries """
@@ -194,6 +239,8 @@ if __name__ == "__main__":
         dksql= load_dck_sql()
         q_rslt= run_duckdb_queries (dckCnx, dksql) 
         
+        df_vqo_nt= vqo_thlb_impact_factor(q_rslt['vqo_slp'])
+        
 
     except Exception as e:
         raise Exception(f"Error occurred: {e}")  
@@ -204,7 +251,7 @@ if __name__ == "__main__":
     print('Compute stats')
 
     df= q_rslt['poly_thlb_mature']
-    grpCols= ['DISTRICT', 'POLYGON_ID', 'REVISED', 'POLYGON_HA']
+    grpCols= ['DISTRICT', 'POLYGON_ID', 'POLYGON_HA']
     
     df= df.groupby(grpCols)['THLB_MATURE_HA'].sum().reset_index()
     
@@ -225,16 +272,12 @@ if __name__ == "__main__":
     
     
     #VQO netdowns
-    vqo_factors= {'P': 1,
-                  'R': 0.992,
-                  'PR': 0.957,
-                  'M': 0.874}
-
     df_vqo= q_rslt['poly_vqo']
-    df_vqo= df_vqo.groupby(['POLYGON_ID', 'REC_EVQO_CODE'])['VQO_THLB_MATURE_HA'].sum().reset_index()
+    df_vqo= df_vqo.groupby(['POLYGON_ID','VLI_POLYGON_NO'])['VQO_THLB_MATURE_HA'].sum().reset_index()
     
     
-    df_vqo['VQO_NETDOWN_FACTOR']= df_vqo['REC_EVQO_CODE'].map(vqo_factors)
+    df_vqo= pd.merge(df_vqo, df_vqo_nt, how='left', on= 'VLI_POLYGON_NO')
+    
     df_vqo['VQO_NETDOWN_THLB_HA']= df_vqo['VQO_THLB_MATURE_HA']* df_vqo['VQO_NETDOWN_FACTOR']
     
     df_vqo.sort_values(by='POLYGON_ID', inplace= True)
@@ -243,7 +286,7 @@ if __name__ == "__main__":
     
 
     #UWR netdowns
-    uwr_no_factor = None #already accounted for in THLB
+    uwr_no_factor = 1
     uwr_cndt_factors= {'u-7-022': 0.5,
                        'u-7-020': 0.5,
                        'u-7-013': 0.4,
