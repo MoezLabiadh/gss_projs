@@ -116,7 +116,20 @@ def load_Orc_sql():
         WHERE
             HERD_NAME IN ('Calendar','Maxhamish','Snake-Sahtaneh','Westside Fort Nelson')
                     """
- 
+
+    orSql['tsa'] = """
+        SELECT
+            TSA_NUMBER_DESCRIPTION,
+            SDO_UTIL.TO_WKTGEOMETRY(GEOMETRY) AS GEOMETRY 
+            
+        FROM 
+            WHSE_ADMIN_BOUNDARIES.FADM_TSA
+        WHERE
+            TSB_NUMBER is null
+            AND  TSA_NUMBER_DESCRIPTION IN ('Fort Nelson TSA','Fort St. John TSA')
+                    """
+                        
+                        
     orSql['uwr'] = """
         SELECT
             UWR_NUMBER,
@@ -272,74 +285,107 @@ def gdf_to_duckdb (dckCnx, loc_dict):
 
 def load_dck_sql():
     dkSql= {}
+    
+    dkSql['mgt_q']="""
+        SELECT
+            mgm.MGMT_TYPE,
+            tsa.TSA_NUMBER_DESCRIPTION AS TSA,
+            ROUND(ST_Area(
+                ST_Intersection(mgm.geometry, tsa.geometry))/10000, 2) AS MGMT_TYPE_AREA_HA
+        FROM 
+            mgmt_types AS mgm
+            JOIN 
+            tsa ON ST_Intersects(mgm.geometry, tsa.geometry)
+        ORDER BY 
+            mgm.MGMT_TYPE;
+                    """   
 
     dkSql['hrd_mgt_q']="""
-        SELECT 
-          hrd.HERD_NAME,
-          mgm.MGMT_TYPE,
-          ROUND(ST_Area(ST_Intersection(hrd.geometry, mgm.geometry))/10000, 2) AS OVERLAP_HA
-
+        SELECT
+            tsa.TSA_NUMBER_DESCRIPTION AS TSA,
+            hrd.HERD_NAME,
+            mgm.MGMT_TYPE,
+            ROUND(ST_Area(ST_Intersection(
+                ST_Intersection(hrd.geometry, mgm.geometry), tsa.geometry))/10000, 2) AS OVERLAP_HA
         FROM 
             herds AS hrd
             JOIN 
                 mgmt_types AS mgm ON ST_Intersects(hrd.geometry, mgm.geometry)
-        
-        ORDER BY hrd.HERD_NAME
-  
+            JOIN 
+                tsa ON ST_Intersects(hrd.geometry, tsa.geometry)
+                    AND ST_Intersects(mgm.geometry, tsa.geometry)
+        ORDER BY 
+            tsa.TSA_NUMBER_DESCRIPTION,
+            hrd.HERD_NAME;
                     """
                     
     dkSql['uwr_q']="""
         SELECT 
-          hrd.HERD_NAME,
-          mgm.MGMT_TYPE,
-          uwr.TIMBER_HARVEST_CODE,
-          ROUND(ST_Area(
-              ST_Intersection(
-                  ST_Intersection(hrd.geometry, mgm.geometry), uwr.geometry))/10000,2) AS INTERSECT_HA
-
+            tsa.TSA_NUMBER_DESCRIPTION AS TSA,
+            hrd.HERD_NAME,
+            mgm.MGMT_TYPE,
+            uwr.TIMBER_HARVEST_CODE,
+            ROUND(ST_Area(
+                ST_Intersection(
+                    ST_Intersection(
+                        ST_Intersection(hrd.geometry, mgm.geometry), uwr.geometry), tsa.geometry))/10000, 2) AS INTERSECT_HA
         FROM 
             herds AS hrd
             JOIN 
                 mgmt_types AS mgm ON ST_Intersects(hrd.geometry, mgm.geometry)
             JOIN 
                 uwr ON ST_Intersects(hrd.geometry, uwr.geometry) 
-                    AND ST_Intersects(mgm.geometry, uwr.geometry);
+                    AND ST_Intersects(mgm.geometry, uwr.geometry)
+            JOIN 
+                tsa ON ST_Intersects(hrd.geometry, tsa.geometry)
+                    AND ST_Intersects(mgm.geometry, tsa.geometry)
+                    AND ST_Intersects(uwr.geometry, tsa.geometry);
                     """
 
     dkSql['wha_q']="""
         SELECT 
-          hrd.HERD_NAME,
-          mgm.MGMT_TYPE,
-          wha.TIMBER_HARVEST_CODE,
-          ROUND(ST_Area(
-              ST_Intersection(
-                  ST_Intersection(hrd.geometry, mgm.geometry), wha.geometry))/10000,2) AS INTERSECT_HA
-
+            tsa.TSA_NUMBER_DESCRIPTION AS TSA,
+            hrd.HERD_NAME,
+            mgm.MGMT_TYPE,
+            wha.TIMBER_HARVEST_CODE,
+            ROUND(ST_Area(
+                ST_Intersection(
+                    ST_Intersection(
+                        ST_Intersection(hrd.geometry, mgm.geometry), wha.geometry), tsa.geometry))/10000, 2) AS INTERSECT_HA
         FROM 
             herds AS hrd
             JOIN 
                 mgmt_types AS mgm ON ST_Intersects(hrd.geometry, mgm.geometry)
             JOIN 
                 wha ON ST_Intersects(hrd.geometry, wha.geometry) 
-                    AND ST_Intersects(mgm.geometry, wha.geometry);
+                    AND ST_Intersects(mgm.geometry, wha.geometry)
+            JOIN 
+                tsa ON ST_Intersects(hrd.geometry, tsa.geometry)
+                    AND ST_Intersects(mgm.geometry, tsa.geometry)
+                    AND ST_Intersects(wha.geometry, tsa.geometry);
                     """
 
     dkSql['fda_q']="""
-        SELECT 
-          hrd.HERD_NAME,
-          mgm.MGMT_TYPE,
-          fda.CURRENT_PRIORITY_DEFERRAL_ID,
-          ROUND(ST_Area(
-              ST_Intersection(
-                  ST_Intersection(hrd.geometry, mgm.geometry), fda.geometry))/10000,2) AS INTERSECT_HA
-
+        SELECT
+            tsa.TSA_NUMBER_DESCRIPTION AS TSA,
+            hrd.HERD_NAME,
+            mgm.MGMT_TYPE,
+            fda.CURRENT_PRIORITY_DEFERRAL_ID,
+            ROUND(ST_Area(
+                ST_Intersection(
+                    ST_Intersection(
+                        ST_Intersection(hrd.geometry, mgm.geometry), fda.geometry), tsa.geometry))/10000, 2) AS INTERSECT_HA
         FROM 
             herds AS hrd
             JOIN 
                 mgmt_types AS mgm ON ST_Intersects(hrd.geometry, mgm.geometry)
             JOIN 
-                fda ON ST_Intersects(hrd.geometry, fda.geometry) 
-                    AND ST_Intersects(mgm.geometry, fda.geometry);
+                fda ON ST_Intersects(hrd.geometry, fda.geometry)
+                    AND ST_Intersects(mgm.geometry, fda.geometry)
+            JOIN 
+                tsa ON ST_Intersects(hrd.geometry, tsa.geometry)
+                    AND ST_Intersects(mgm.geometry, tsa.geometry)
+                    AND ST_Intersects(fda.geometry, tsa.geometry);
                     """
                     
                  
@@ -405,7 +451,7 @@ if __name__ == "__main__":
     orcCur= Oracle.cursor
     
     print ('..connect to Duckdb') 
-    projDB= os.path.join(wks, 'work', 'GR_2024_528_habitat_type_stats', 'habitat_types_analysis.db')
+    projDB= os.path.join(wks, 'work', 'GR_2024_528_mgmt_type_GAR_analysis', 'habitat_types_analysis.db')
     Duckdb= DuckDBConnector(db= projDB)
     Duckdb.connect_to_db()
     dckCnx= Duckdb.conn
@@ -438,31 +484,34 @@ if __name__ == "__main__":
         Oracle.disconnect_db()
         Duckdb.disconnect_db()
     
-       
+      
     print ('\nCompute summary stats')
     #uwr
     df_uwr= q_rslt['uwr_q']
-    df_uwr= df_uwr.groupby(['HERD_NAME', 'MGMT_TYPE', 'TIMBER_HARVEST_CODE'])['INTERSECT_HA'].sum().reset_index() 
+    df_uwr= df_uwr.groupby(['TSA','HERD_NAME', 
+                            'MGMT_TYPE', 'TIMBER_HARVEST_CODE'])['INTERSECT_HA'].sum().reset_index() 
     
-    df_uwr.loc[df_uwr['TIMBER_HARVEST_CODE'] == 'NO HARVEST ZONE', 'TYPE'] = 'UWR_NO_HARVEST'
-    df_uwr.loc[df_uwr['TIMBER_HARVEST_CODE'] == 'CONDITIONAL HARVEST ZONE', 'TYPE'] = 'UWR_CNDTL_HARVEST'
+    df_uwr.loc[df_uwr['TIMBER_HARVEST_CODE'] == 'NO HARVEST ZONE', 'GAR_TYPE'] = 'UWR_NO_HARVEST'
+    df_uwr.loc[df_uwr['TIMBER_HARVEST_CODE'] == 'CONDITIONAL HARVEST ZONE', 'GAR_TYPE'] = 'UWR_CNDTL_HARVEST'
     df_uwr.drop(columns=['TIMBER_HARVEST_CODE'], inplace=True)
     
     #wha
     df_wha= q_rslt['wha_q']
-    df_wha= df_wha.groupby(['HERD_NAME', 'MGMT_TYPE', 'TIMBER_HARVEST_CODE'])['INTERSECT_HA'].sum().reset_index() 
+    df_wha= df_wha.groupby(['TSA','HERD_NAME', 
+                            'MGMT_TYPE', 'TIMBER_HARVEST_CODE'])['INTERSECT_HA'].sum().reset_index() 
     
-    df_wha.loc[df_wha['TIMBER_HARVEST_CODE'] == 'NO HARVEST ZONE', 'TYPE'] = 'WHA_NO_HARVEST'
-    df_wha.loc[df_wha['TIMBER_HARVEST_CODE'] == 'CONDITIONAL HARVEST ZONE', 'TYPE'] = 'WHA_CNDTL_HARVEST'
+    df_wha.loc[df_wha['TIMBER_HARVEST_CODE'] == 'NO HARVEST ZONE', 'GAR_TYPE'] = 'WHA_NO_HARVEST'
+    df_wha.loc[df_wha['TIMBER_HARVEST_CODE'] == 'CONDITIONAL HARVEST ZONE', 'GAR_TYPE'] = 'WHA_CNDTL_HARVEST'
     df_wha.drop(columns=['TIMBER_HARVEST_CODE'], inplace=True)
     
     df_fda= q_rslt['fda_q']
-    df_fda= df_fda.groupby(['HERD_NAME', 'MGMT_TYPE'])['INTERSECT_HA'].sum().reset_index()  
-    df_fda['TYPE'] = 'PRIORITY_DEF_AREA'
+    df_fda= df_fda.groupby(['TSA', 'HERD_NAME', 'MGMT_TYPE'])['INTERSECT_HA'].sum().reset_index()  
+    df_fda['GAR_TYPE'] = 'PRIORITY_DEF_AREA'
     
     #concatinate dfs
-    df_all= pd.concat([df_uwr, df_wha, df_fda]).reset_index(drop= True)  
+    df= pd.concat([df_uwr, df_wha, df_fda]).reset_index(drop= True)  
     
+    '''
     #pivot table
     df= pd.pivot_table(df_all, 
                        values='INTERSECT_HA', 
@@ -470,28 +519,36 @@ if __name__ == "__main__":
                        columns=['TYPE']).reset_index()
     
     df.fillna(0, inplace= True)
+    '''
     
     #change col order
-    df= df[['HERD_NAME', 'MGMT_TYPE','UWR_NO_HARVEST', 'WHA_NO_HARVEST', 
-            'PRIORITY_DEF_AREA', 'UWR_CNDTL_HARVEST', 'WHA_CNDTL_HARVEST']]
+    df= df[['TSA','HERD_NAME','MGMT_TYPE', 'GAR_TYPE', 'INTERSECT_HA']]
+    
     
     #add mgmt type area
-    gdf['MGMT_TYPE_AREA_HA']= round(gdf.geometry.area/10000,2)
-    df_mgt= gdf[['MGMT_TYPE','MGMT_TYPE_AREA_HA']]
+    df_mgt= q_rslt['mgt_q']
     
     #add herd/mgmt type overlap
     df_hrd_mgt= q_rslt['hrd_mgt_q']
+    
+    #remove zeros
+    dfs= [df_mgt, df_hrd_mgt, df]
+    for i in range(len(dfs)):
+        df = dfs[i]
+        df = df[(df != 0).all(axis=1)]
+        dfs[i] = df
     
     print ('\nGenerate a report')
     outloc= os.path.join(wks, 'deliverables', 'GAR_analysis')
     today = datetime.today().strftime('%Y%m%d')
     filename= today + '_borealCaribou_pbcprMgmtTypes'
-    dfs= [df_mgt, df_hrd_mgt, df]
-    sheets= ['MGMT TYPES', 'HERD-MGMT TYPE OVERLAP', 'ANALYSIS SUMMARY']
+    
+    sheets= ['MGMT TYPES', 'HERD-MGMT TYPE OVERLAP', 'GAR ANALYSIS SUMMARY']
     generate_report (outloc, dfs, sheets, filename)
-        
+  
     finish_t = timeit.default_timer() #finish time
     t_sec = round(finish_t-start_t)
     mins = int (t_sec/60)
     secs = int (t_sec%60)
     print (f'\nProcessing Completed in {mins} minutes and {secs} seconds')  
+    
