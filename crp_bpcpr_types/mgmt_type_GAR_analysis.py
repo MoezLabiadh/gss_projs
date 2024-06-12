@@ -1,3 +1,19 @@
+#-------------------------------------------------------------------------------
+# Name:        GAR analysis for Boreal Caribou herds (project GR_2024_528)
+#
+# Purpose:     This script generates summary statistics for GAR orders 
+#              by TSA, Caribou herd and PBCPR Mgmt type
+#              
+# Input(s):    (1) json file (H:\config\db_config.json) containing BCGW connection params.
+#              (2) PBCPR Mgmt type (featureclass)(condifential).
+#              (3) workspace- folder location to create db and outputs.           
+#
+# Author:      Moez Labiadh - GeoBC, GSS
+#
+# Created:     2024-06-12
+# Updated:     
+#-------------------------------------------------------------------------------
+
 import warnings
 warnings.simplefilter(action='ignore')
 
@@ -433,8 +449,6 @@ def generate_report (workspace, df_list, sheet_list,filename):
 
     writer.save()
     writer.close()
-    
-    
     
     
 if __name__ == "__main__":
