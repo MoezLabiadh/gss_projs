@@ -24,7 +24,7 @@ import cx_Oracle
 import duckdb
 import pandas as pd
 import geopandas as gpd
-from shapely import wkb
+from shapely import wkb, wkt
 from datetime import datetime
 
 
@@ -96,6 +96,7 @@ def process_pbcpr_data (pbcpr_gdb):
     
     env = gdf.geometry.unary_union.envelope
     gdf_env = gpd.GeoDataFrame(geometry=[env], crs= gdf.crs)
+    
     return gdf, gdf_env
 
 
@@ -194,23 +195,43 @@ def load_Orc_sql():
                     
     return orSql
 
-
-def oracle_2_duckdb(orcCnx, orcCur, dckCnx, dict_sqls, wkb_aoi, srid):
-    """Insert data from Oracle into a duckdb table"""
-    tables = {}
+def read_oracle_data (orcCnx, orcCur, dckCnx, dict_sqls, wkb_aoi, srid, data_dict):
     counter = 1
-    
     for k, v in dict_sqls.items():
-        print(f'..adding table {counter} of {len(dict_sqls)}: {k}')
-        print('....export from Oracle')
+        print(f'....table {counter} of {len(dict_sqls)}: {k}')
         if ':wkb_aoi' in v:
             orcCur.setinputsizes(wkb_aoi=cx_Oracle.BLOB)
             bvars = {'wkb_aoi':wkb_aoi,'srid':srid}
             df = read_query(orcCnx, orcCur, v ,bvars)
         else:
             df = pd.read_sql(v, orcCnx)
-            
+        
+        data_dict[k]= df
+        
+        counter+=1
+    
+    return data_dict
 
+
+def read_local_data(loc_dict, data_dict):
+    counter = 1
+    for k, v in loc_dict.items():
+        print(f'..table {counter} of {len(loc_dict)}: {k}')
+        df= v
+        df['GEOMETRY']= df['geometry'].apply(lambda x: wkt.dumps(x, output_dimension=2))
+        df = df.drop(columns=['geometry'])
+        
+        data_dict[k]= df
+        
+        counter+=1
+        
+    return data_dict    
+        
+
+def add_data_to_duckdb(data_dict):
+    counter = 1
+    for k, v in data_dict.items():
+        print(f'..table {counter} of {len(data_dict)}: {k}')
         dck_tab_list= dckCnx.execute('SHOW TABLES').df()['name'].to_list()
         
         if k in dck_tab_list:
@@ -219,12 +240,12 @@ def oracle_2_duckdb(orcCnx, orcCur, dckCnx, dict_sqls, wkb_aoi, srid):
                                              FROM INFORMATION_SCHEMA.COLUMNS 
                                              WHERE table_name = '{k}'""").df()['column_name'].to_list()
                 
-            if (dck_row_count != len(df)) or (set(list(df.columns)) != set(dck_col_nams)):
-                print (f'....import to Duckdb ({df.shape[0]} rows)')
+            if (dck_row_count != len(v)) or (set(list(v.columns)) != set(dck_col_nams)):
+                print (f'....import to Duckdb ({v.shape[0]} rows)')
                 create_table_query = f"""
                 CREATE OR REPLACE TABLE {k} AS
                   SELECT * EXCLUDE geometry, ST_GeomFromText(geometry) AS GEOMETRY
-                  FROM df;
+                  FROM v;
                 """
                 dckCnx.execute(create_table_query)
             else:
@@ -232,71 +253,15 @@ def oracle_2_duckdb(orcCnx, orcCur, dckCnx, dict_sqls, wkb_aoi, srid):
                 pass
         
         else:
-            print (f'....import to Duckdb ({df.shape[0]} rows)')
+            print (f'....import to Duckdb ({v.shape[0]} rows)')
             create_table_query = f"""
             CREATE OR REPLACE TABLE {k} AS
               SELECT * EXCLUDE geometry, ST_GeomFromText(geometry) AS GEOMETRY
-              FROM df;
+              FROM v;
             """
             dckCnx.execute(create_table_query)
-      
-        df = df.drop(columns=['GEOMETRY'])
-        
-        tables[k] = df
-      
-        counter += 1
-
-    return tables
-
-
-def gdf_to_duckdb (dckCnx, loc_dict):
-    """Insert data from a gdfs into a duckdb table """
-    tables = {}
-    counter= 1
-    for k, v in loc_dict.items():
-        print (f'..adding table {counter} of {len(loc_dict)}: {k}')
-        print ('....export from gdb')
-        df= v
-        df['GEOMETRY']= df['geometry'].apply(lambda x: wkb.dumps(x, output_dimension=2))
-        df = df.drop(columns=['geometry'])
-        
-        dck_tab_list= dckCnx.execute('SHOW TABLES').df()['name'].to_list()
-        
-        if k in dck_tab_list:
-            dck_row_count= dckCnx.execute(f'SELECT COUNT(*) FROM {k}').fetchone()[0]
-            dck_col_nams= dckCnx.execute(f"""SELECT column_name 
-                                             FROM INFORMATION_SCHEMA.COLUMNS 
-                                             WHERE table_name = '{k}'""").df()['column_name'].to_list()
-                
-            if (dck_row_count != len(df)) or (set(list(df.columns)) != set(dck_col_nams)):
-                print (f'....import to Duckdb ({df.shape[0]} rows)')
-                create_table_query = f"""
-                CREATE OR REPLACE TABLE {k} AS
-                  SELECT * EXCLUDE geometry, ST_GeomFromWKB(geometry) AS GEOMETRY
-                  FROM df;
-                """
-                dckCnx.execute(create_table_query)
-            else:
-                print('....data already in db: skip importing')
-                pass
-        
-        else:
-            print (f'....import to Duckdb ({df.shape[0]} rows)')
-            create_table_query = f"""
-            CREATE OR REPLACE TABLE {k} AS
-              SELECT * EXCLUDE geometry, ST_GeomFromWKB(geometry) AS GEOMETRY
-              FROM df;
-            """
-            dckCnx.execute(create_table_query)
-            
-        
-        df = df.drop(columns=['GEOMETRY'])
-        
-        tables[k] = df
-        
-        counter+= 1
-        
-    return tables    
+         
+        counter += 1    
 
 
 def load_dck_sql():
@@ -456,7 +421,7 @@ if __name__ == "__main__":
     
     wks= r'W:\srm\nr\crp\projects\2024\GR_2024_528'
 
-    print ('Connect to databases')    
+    print ('Connecting to databases')    
     
     print ('..connect to BCGW') 
     Oracle = OracleConnector()
@@ -470,23 +435,29 @@ if __name__ == "__main__":
     Duckdb.connect_to_db()
     dckCnx= Duckdb.conn
     
-    print ('\nRead the Mgmt types dataset')   
+    print ('\nReading the Mgmt types dataset')   
     pbcpr_gdb= gdb= os.path.join(wks, 'source data' ,'incoming','BorealCaribouRecovery.gdb')
     gdf, gdf_env= process_pbcpr_data (pbcpr_gdb)
     
     wkb_aoi, srid= get_wkb_srid(gdf_env)
     
     try:
-        print ('\nLoad BCGW datasets')
-        orSql= load_Orc_sql ()
-        orcTables= oracle_2_duckdb(orcCnx, orcCur, dckCnx, orSql, wkb_aoi, srid)
-        
-        print ('\nLoad local datasets')
+        print ('\nReading input data')
+        orSql_dict= load_Orc_sql ()
         loc_dict={}
         loc_dict['mgmt_types']= gdf
-        gdbTables= gdf_to_duckdb (dckCnx, loc_dict)
         
-        print ('\nRun queries')
+        data_dict= {}
+        print('..reading from Oracle')
+        data_dict= read_oracle_data (orcCnx, orcCur, dckCnx, orSql_dict, wkb_aoi, srid, data_dict)
+        
+        print('\n..reading from Local files')
+        data_dict= read_local_data(loc_dict, data_dict)
+        
+        print('\nWriting data to duckdb')
+        add_data_to_duckdb(data_dict)
+        
+        print ('\nRunning queries')
         dksql= load_dck_sql()
         q_rslt= run_duckdb_queries (dckCnx, dksql) 
         
@@ -499,7 +470,7 @@ if __name__ == "__main__":
         Duckdb.disconnect_db()
     
       
-    print ('\nCompute summary stats')
+    print ('\nComputing summary stats')
     #uwr
     df_uwr= q_rslt['uwr_q']
     df_uwr= df_uwr.groupby(['TSA','HERD_NAME', 
@@ -552,7 +523,7 @@ if __name__ == "__main__":
         df = df[(df != 0).all(axis=1)]
         dfs[i] = df
     
-    print ('\nGenerate a report')
+    print ('\nGenerating a report')
     outloc= os.path.join(wks, 'deliverables', 'GAR_analysis')
     today = datetime.today().strftime('%Y%m%d')
     filename= today + '_borealCaribou_pbcprMgmtTypes'
@@ -565,4 +536,3 @@ if __name__ == "__main__":
     mins = int (t_sec/60)
     secs = int (t_sec%60)
     print (f'\nProcessing Completed in {mins} minutes and {secs} seconds')  
-    
