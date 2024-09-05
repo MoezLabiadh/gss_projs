@@ -5,7 +5,6 @@ import os
 import timeit
 import duckdb
 import pandas as pd
-from datetime import datetime
 
 class DuckDBConnector:
     def __init__(self, db=':memory:'):
@@ -116,6 +115,8 @@ if __name__ == "__main__":
         #df['VOLUME_IMPACT_M3']= df['TIMBER_VOLUME_M3'] * df['IMPACT_FACT']
         
         df_sum = df.groupby(['TSA_NAME', 'PLAN_AREA_NAME'])[['AREA_HA', 'THLB_AREA_HA', 'THLB_IMPACT_HA']].sum().reset_index()
+        
+        df_sum_tsa = df.groupby(['TSA_NAME'])[['AREA_HA', 'THLB_AREA_HA','THLB_IMPACT_HA']].sum().reset_index()
        
         
         
