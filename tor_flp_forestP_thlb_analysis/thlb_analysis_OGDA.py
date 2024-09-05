@@ -5,7 +5,6 @@ import os
 import timeit
 import duckdb
 import pandas as pd
-from datetime import datetime
 
 class DuckDBConnector:
     def __init__(self, db=':memory:'):
@@ -30,20 +29,39 @@ def load_dck_sql():
     dkSql= {}
     
 
-    dkSql['ogda_check']="""
-    --Check for overlapping features
-        SELECT 
-            a.OGSR_TOF_SYSID AS id1, 
-            b.OGSR_TOF_SYSID AS id2
-        FROM 
-            ogda AS a
-        JOIN 
-            ogda AS b
-        ON 
-            ST_Intersects(a.geometry, b.geometry)
-        WHERE 
-            a.OGSR_TOF_SYSID < b.OGSR_TOF_SYSID;
+    dkSql['ogda_thlb']="""
+    --Create a table for OGDA THLB calulcation
+        CREATE TABLE ogda_thlb AS
+            SELECT 
+              ogda.OGSR_TOF_SYSID,
+              ogda.BGC_LABEL,
+              thlb.thlb_fact,
+              ST_Intersection(ogda.geometry, thlb.geometry) AS geometry
+              
+            FROM 
+              ogda
+                  JOIN thlb ON ST_Intersects(ogda.geometry, thlb.geometry);
+            
                     """
+                    
+    dkSql['ogda_thlb_aoi']="""
+    --Create a table for OGDA THLB AOIs
+        CREATE TABLE ogda_thlb_aoi AS
+            SELECT 
+              aoi.TSA_NUMBER_DESCRIPTION AS TSA_NAME,
+              aoi.WATERSHED_GROUP_NAME AS PLAN_AREA_NAME,
+              thlb.OGSR_TOF_SYSID,
+              thlb.BGC_LABEL,
+              ROUND(ST_Area(
+                      ST_Intersection(aoi.geometry, thlb.geometry))/10000, 4) AS AREA_HA,
+              ROUND(ST_Area(
+                      ST_Intersection(aoi.geometry, thlb.geometry))/10000 * thlb.thlb_fact, 4) AS THLB_AREA_HA,
+              ST_Intersection(aoi.geometry, thlb.geometry) AS geometry
+ 
+            FROM 
+              tsa_plan_areas aoi
+                  JOIN ogda_thlb thlb ON ST_Intersects(aoi.geometry, thlb.geometry);
+                    """ 
                                    
     
     return dkSql
@@ -83,7 +101,7 @@ if __name__ == "__main__":
         
         
         print ('Compute stats')
-        df= dckCnx.execute("""SELECT*  EXCLUDE geometry FROM idf_thlb_aoi""").df()
+        df= dckCnx.execute("""SELECT*  EXCLUDE geometry FROM ogda_thlb_aoi""").df()
         
         #df['TIMBER_VOLUME_M3']= df['LIVE_STAND_VOLUME_125'] * df['THLB_AREA_HA']
         df['IMPACT_FACT']= 0.5
