@@ -88,7 +88,7 @@ def merge_riparian (dckCnx):
 if __name__ == "__main__":
     start_t = timeit.default_timer() #start time 
     
-    wks= r'\\spatialfiles.bcgov\Work\lwbc\visr\Workarea\moez_labiadh\WORKSPACE_2024\20240819_flp_to_thlb_analysis'
+    wks= r'W:\lwbc\visr\Workarea\moez_labiadh\WORKSPACE_2024\20240819_flp_to_thlb_analysis'
 
     print ('Connecting to databases')    
     print ('..connect to Duckdb') 

@@ -95,27 +95,6 @@ if __name__ == "__main__":
         dksql= load_dck_sql()
         run_duckdb_queries (dckCnx, dksql) 
 
-        '''
-        print ('Compute Overview stats')
-        # thlb by TSA (whole tsa)
-        df_tlhb_tsa= dckCnx.execute("""SELECT*  EXCLUDE geometry FROM tsa_full_thlb""").df()
-        df_tlhb_tsa_sum = df_tlhb_tsa.groupby(['TSA_NAME'])[['THLB_AREA']].sum().reset_index()
-       
-        # thlb by TSA (in plan area)
-        df_tlhb_tsaPlan= dckCnx.execute("""SELECT*  EXCLUDE geometry FROM tsa_planA_thlb""").df() 
-        df_tlhb_tsaPlan_sum = df_tlhb_tsaPlan.groupby(['TSA_NAME'])[['THLB_AREA']].sum().reset_index()
-        #df_tlhb_tsaPlan_sum['RIPR_ADJUST_FACTOR'] = 0.13
-        #df_tlhb_tsaPlan_sum['THLB_AREA_ADJUSTED'] = df_tlhb_tsaPlan_sum['THLB_AREA'] + (df_tlhb_tsaPlan_sum['THLB_AREA'] * df_tlhb_tsaPlan_sum['RIPR_ADJUST_FACTOR'])
-        
-        print ('Compute TSA stats')
-        #Okanagan thlb
-        df_okn_s1= dckCnx.execute("""SELECT*  EXCLUDE geometry FROM idf_thlb_okanagan_scenario1""").df()
-        df_okn_s1_sum= df_okn_s1.groupby(['TSA_NAME'])[['THLB_IMPACT']].sum().reset_index()
-        
-        df_okn_s2= dckCnx.execute("""SELECT*  EXCLUDE geometry FROM idf_thlb_okanagan_scenario2""").df()
-        df_okn_s2_sum= df_okn_s2.groupby(['TSA_NAME'])[['THLB_IMPACT']].sum().reset_index()
-        '''
-        
     except Exception as e:
         raise Exception(f"Error occurred: {e}")  
     

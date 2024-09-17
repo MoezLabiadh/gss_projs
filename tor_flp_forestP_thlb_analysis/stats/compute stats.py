@@ -26,9 +26,6 @@ class DuckDBConnector:
             self.conn = None
             
 
-
-    
-
 if __name__ == "__main__":
     start_t = timeit.default_timer() #start time 
     
