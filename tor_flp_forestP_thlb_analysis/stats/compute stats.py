@@ -43,7 +43,7 @@ if __name__ == "__main__":
     dckCnx.execute("SET GLOBAL pandas_analyze_sample=1000000")
     
     try:
-        '''
+
         print ('\nCompute Gross THLB summaries')
         # thlb by TSA (whole tsa)
         df_tlhb_tsa= dckCnx.execute("""SELECT* EXCLUDE geometry FROM tsa_full_thlb""").df()
@@ -61,6 +61,8 @@ if __name__ == "__main__":
         # thlb by TSA (in plan area)
         df_tlhb_tsaPlan= dckCnx.execute("""SELECT*  EXCLUDE geometry FROM tsa_planA_thlb""").df() 
         df_tlhb_tsaPlan_sum = df_tlhb_tsaPlan.groupby(['TSA_NAME'])[['THLB_AREA']].sum().reset_index().rename(columns={'THLB_AREA': 'AOI_THLB_AREA'})
+        
+        df_tlhb_sumAll= pd.merge(df_tlhb_tsa_sum, df_tlhb_tsaPlan_sum, on='TSA_NAME')
 
 
 
@@ -98,7 +100,7 @@ if __name__ == "__main__":
             )
         )
         
-        df_idf_okn_s1['THLB_AREA_DECREASE'] = df_idf_okn_s1['GROSS_THLB_AREA'] - (df_idf_okn_s1['GROSS_THLB_AREA']*df_idf_okn_s1['IDF_REDUCTION_FACTOR_S1'])
+        df_idf_okn_s1['THLB_AREA_DECREASE'] = df_idf_okn_s1['GROSS_THLB_AREA'] * df_idf_okn_s1['IDF_REDUCTION_FACTOR_S1']
 
             ## scenario-2 ##
         df_idf_okn_s2 = df_idf_okn[df_idf_okn['PROJ_AGE_1'] >= 60]
@@ -115,7 +117,7 @@ if __name__ == "__main__":
             )
         )
         
-        df_idf_okn_s2['THLB_AREA_DECREASE'] = df_idf_okn_s2['GROSS_THLB_AREA'] - (df_idf_okn_s2['GROSS_THLB_AREA']*df_idf_okn_s2['IDF_REDUCTION_FACTOR_S2'])
+        df_idf_okn_s2['THLB_AREA_DECREASE'] = df_idf_okn_s2['GROSS_THLB_AREA'] * df_idf_okn_s2['IDF_REDUCTION_FACTOR_S2']
           
         
         ####### Kamloops scenarios #######
@@ -129,7 +131,7 @@ if __name__ == "__main__":
         df_idf_kam_s1['IDF_REDUCTION_FACTOR_S1'] = np.where(
             df_idf_kam_s1['MDWR_OVERLAP'].notnull(), 0.25, 0.5)
         
-        df_idf_kam_s1['THLB_AREA_DECREASE'] = df_idf_kam_s1['GROSS_THLB_AREA'] - (df_idf_kam_s1['GROSS_THLB_AREA']*df_idf_kam_s1['IDF_REDUCTION_FACTOR_S1'])
+        df_idf_kam_s1['THLB_AREA_DECREASE'] = df_idf_kam_s1['GROSS_THLB_AREA'] * df_idf_kam_s1['IDF_REDUCTION_FACTOR_S1']
 
             ## scenario-1 ##
         df_idf_kam_s2= df_idf_kam[df_idf_kam['PROJ_AGE_1'] >= 60]
@@ -137,20 +139,26 @@ if __name__ == "__main__":
         df_idf_kam_s2['IDF_REDUCTION_FACTOR_S2'] = np.where(
             df_idf_kam_s2['MDWR_OVERLAP'].notnull(), 0.25, 0.5)
         
-        df_idf_kam_s2['THLB_AREA_DECREASE'] = df_idf_kam_s2['GROSS_THLB_AREA'] - (df_idf_kam_s2['GROSS_THLB_AREA']*df_idf_kam_s2['IDF_REDUCTION_FACTOR_S2'])
+        df_idf_kam_s2['THLB_AREA_DECREASE'] = df_idf_kam_s2['GROSS_THLB_AREA'] * df_idf_kam_s2['IDF_REDUCTION_FACTOR_S2']
 
-        '''
+
         
         print ('\nCompute OGDA summary')
         
         df_ogda= dckCnx.execute("""SELECT* EXCLUDE geometry FROM ogda_thlb_tsa""").df()
         
-        df_ogda['GROSS_THLB_AREA']= df_ogda['AREA_HA'] * df_ogda['thlb_fact']
+        df_ogda['OGDA_THLB_AREA']= df_ogda['AREA_HA'] * df_ogda['thlb_fact']
         
-        df_ogda['OGDA_REDUCTION_FACTOR']= 1
+        df_ogda_sum = df_ogda.groupby(['TSA_NAME'])[['OGDA_THLB_AREA']].sum().reset_index()
         
-        df_ogda['THLB_AREA_DECREASE'] = df_ogda['GROSS_THLB_AREA'] - (df_ogda['GROSS_THLB_AREA']*df_ogda['OGDA_REDUCTION_FACTOR'])
+        df_tlhb_sumAll= df_tlhb_sumAll[['TSA_NAME', 'TSA_THLB_AREA', 'AOI_THLB_AREA']]
         
+        df_ogda_fnl= pd.merge(df_tlhb_sumAll, df_ogda_sum, on='TSA_NAME')
+        
+        df_ogda_fnl['OGDA_REDUCTION_FACTOR']= 1
+        df_ogda_fnl['THLB_AREA_DECREASE'] = df_ogda_fnl['OGDA_THLB_AREA'] * df_ogda_fnl['OGDA_REDUCTION_FACTOR']
+        df_ogda_fnl['THLB_AREA_DECREASE_%'] = round((df_ogda_fnl['THLB_AREA_DECREASE'] / df_ogda_fnl['AOI_THLB_AREA']) * 100, 1)
+        df_ogda_fnl['THLB_AREA_REMAINING'] = df_ogda_fnl['AOI_THLB_AREA'] - df_ogda_fnl['THLB_AREA_DECREASE']
     
     except Exception as e:
         raise Exception(f"Error occurred: {e}")  
