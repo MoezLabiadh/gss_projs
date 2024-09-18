@@ -8,7 +8,8 @@ import pandas as pd
 import geopandas as gpd
 from shapely import wkb
 import timeit
-from datetime import datetime
+from datetime import datetime, timedelta
+
 
 class OracleConnector:
     def __init__(self, dbname='BCGW'):
@@ -114,7 +115,8 @@ def load_queries ():
         
         WHERE 
             REGION_CODE= 'RTO'
-            AND MGMT_UNIT_DESCRIPTION IN ('100 Mile House TSA' , 'Kamloops TSA' , 'Merritt TSA' , 'Okanagan TSA')
+            AND MGMT_UNIT_DESCRIPTION IN ('100 Mile House TSA' , 'Kamloops TSA' , 
+                                          'Merritt TSA' , 'Okanagan TSA')
             AND GENERALIZED_BGC_ZONE_CODE= 'IDF'
             AND DENUDATION_1_DISTURBANCE_CODE = 'L'
             AND SDO_RELATE (GEOMETRY, SDO_GEOMETRY(:wkb_aoi, :srid),'mask=ANYINTERACT') = 'TRUE'
@@ -123,11 +125,36 @@ def load_queries ():
     return sql
 
 
+def create_report (df_list, sheet_list,filename):
+    """ Exports dataframes to multi-tab excel spreasheet"""
+
+    writer = pd.ExcelWriter(filename+'.xlsx',engine='xlsxwriter')
+
+    for dataframe, sheet in zip(df_list, sheet_list):
+        dataframe = dataframe.reset_index(drop=True)
+        dataframe.index = dataframe.index + 1
+
+        dataframe.to_excel(writer, sheet_name=sheet, index=False, startrow=0 , startcol=0)
+
+        worksheet = writer.sheets[sheet]
+        workbook = writer.book
+
+        worksheet.set_column(0, dataframe.shape[1], 20)
+
+        col_names = [{'header': col_name} for col_name in dataframe.columns[1:-1]]
+        col_names.insert(0,{'header' : dataframe.columns[0], 'total_string': 'Total'})
+        col_names.append ({'header' : dataframe.columns[-1], 'total_function': 'count'})
+        worksheet.add_table(0, 0, dataframe.shape[0]+1, dataframe.shape[1]-1, {
+            'total_row': True,
+            'columns': col_names})
+
+    writer.close()
+
 
 if __name__ == "__main__":
     start_t = timeit.default_timer() #start time 
     
-    wks= r'\\spatialfiles.bcgov\Work\lwbc\visr\Workarea\moez_labiadh\WORKSPACE_2024\20240819_flp_to_thlb_analysis'
+    wks= r'W:\lwbc\visr\Workarea\moez_labiadh\WORKSPACE_2024\20240819_flp_to_thlb_analysis'
     
     print ('Connecting to BCGW.')
     oracle_connector = OracleConnector()
@@ -147,19 +174,33 @@ if __name__ == "__main__":
     bvars = {'wkb_aoi':wkb_aoi,'srid':srid}
     df = read_query(connection,cursor,sql['idf_ctblk'],bvars)
     
+    
     print ('\nCompute stats')
-    grouped = df.groupby('DENUDATION_1_SILV_SYSTEM_CODE')['OPENING_GROSS_AREA'].sum().reset_index()
+    past_fifteen_years = datetime.now() - timedelta(days=15*365)
+    df_fy = df[df['DISTURBANCE_END_DATE'] >= past_fifteen_years]
+
+    df_sum = df_fy.groupby('DENUDATION_1_SILV_SYSTEM_CODE')['OPENING_GROSS_AREA'].sum().reset_index()
+    total_area = df_fy['OPENING_GROSS_AREA'].sum()
     
-    # Calculate the total sum of OPENING_GROSS_AREA
-    total_area = df['OPENING_GROSS_AREA'].sum()
+    df_sum.rename(columns={
+            'DENUDATION_1_SILV_SYSTEM_CODE': 'DENUDATION_SILV_SYSTEM',
+            'OPENING_GROSS_AREA': 'TOTAL_AREA_HA'
+        }, inplace= True
+    )
     
-    # Calculate the percentage for each DENUDATION_1_SILV_SYSTEM_CODE
-    grouped['PERCENTAGE'] = grouped['OPENING_GROSS_AREA'] / total_area * 100
+    df_sum['AREA_%'] = round(df_sum['TOTAL_AREA_HA'] / total_area * 100, 1)
     
-    # Merge the results back to the original dataframe
-    df = df.merge(grouped[['DENUDATION_1_SILV_SYSTEM_CODE', 'PERCENTAGE']], 
-                  on='DENUDATION_1_SILV_SYSTEM_CODE', 
-                  how='left')
+    df_sum.sort_values(by='AREA_%', ascending=False, inplace=True)
+    
+    
+    print ('\nExport results')
+    df_list= [df, df_sum]
+    sheet_list= ['query_result_All', '15Year_summary']
+    
+    datetime= datetime.now().strftime("%Y%m%d_%H%M")
+    outfile= os.path.join(wks, 'outputs', f'{datetime}_partialCut_analysis')
+    
+    create_report (df_list, sheet_list,outfile)
     
     
     
