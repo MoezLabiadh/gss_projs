@@ -46,24 +46,25 @@ if __name__ == "__main__":
         df_tlhb_tsa= dckCnx.execute("""SELECT* EXCLUDE geometry FROM tsa_full_thlb""").df()
         df_tlhb_tsa_sum = df_tlhb_tsa.groupby(['TSA_NAME'])[['THLB_AREA']].sum().reset_index().rename(columns={'THLB_AREA': 'TSA_THLB_AREA'})
         
-        df_tlhb_tsa_sum['RIP_ADJUST_FACTOR'] = np.where(
-                df_tlhb_tsa_sum['TSA_NAME'] == '100 Mile House TSA', 0.02,
-                np.where(df_tlhb_tsa_sum['TSA_NAME'] == 'Okanagan TSA', 0.13, 0)
-        )
-        
-        df_tlhb_tsa_sum['TSA_THLB_AREA_RIP_ADJUSTED'] = df_tlhb_tsa_sum['TSA_THLB_AREA'] - (
-            df_tlhb_tsa_sum['TSA_THLB_AREA'] * df_tlhb_tsa_sum['RIP_ADJUST_FACTOR']
-        )
-       
+   
         # thlb by TSA (in plan area)
-        df_tlhb_tsaPlan= dckCnx.execute("""SELECT*  EXCLUDE geometry FROM tsa_planA_thlb""").df() 
-        df_tlhb_tsaPlan_sum = df_tlhb_tsaPlan.groupby(['TSA_NAME'])[['THLB_AREA']].sum().reset_index().rename(columns={'THLB_AREA': 'AOI_THLB_AREA'})
+        df_tlhb_qs= dckCnx.execute("""SELECT*  EXCLUDE geometry FROM tsa_planA_thlb""").df() 
+        df_tlhb_qs_sum = df_tlhb_qs.groupby(['TSA_NAME'])[['THLB_AREA']].sum().reset_index().rename(columns={'THLB_AREA': 'QS_THLB_AREA'})
         
-        df_tlhb_sumAll= pd.merge(df_tlhb_tsa_sum, df_tlhb_tsaPlan_sum, on='TSA_NAME')
+        df_tlhb_qs_sum['RIP_ADJUST_FACTOR'] = np.where(
+                df_tlhb_qs_sum['TSA_NAME'] == '100 Mile House TSA', 0.02,
+                np.where(df_tlhb_qs_sum['TSA_NAME'] == 'Okanagan TSA', 0.13, 0)
+        )
+        
+        df_tlhb_qs_sum['QS_THLB_AREA_RIP_ADJUSTED'] = df_tlhb_qs_sum['QS_THLB_AREA'] + (
+            df_tlhb_qs_sum['QS_THLB_AREA'] * df_tlhb_qs_sum['RIP_ADJUST_FACTOR']
+        )
+        
+        
+        df_tlhb_sumAll= pd.merge(df_tlhb_tsa_sum, df_tlhb_qs_sum, on='TSA_NAME')
 
 
-
-
+        '''
         print ('\nCompute IDF summaries')
         
         df_idf= dckCnx.execute("""SELECT* EXCLUDE geometry FROM idf_thlb_tsa_mdwr""").df()
@@ -72,47 +73,39 @@ if __name__ == "__main__":
         
         df_idf['GROSS_THLB_AREA']= df_idf['AREA_HA'] * df_idf['thlb_fact']
         
+
         ####### 100 Mile House scenarios #######
         df_idf_omh= df_idf[df_idf['TSA_NAME']=='100 Mile House TSA']
         df_idf_omh['IDF_REDUCTION_FACTOR']= 0.5
         
         bec_excl= ['mm', 'mw', 'dk', 'xh', 'xm', 'dw', 'xw', 'ww']
-        #df_idf_omh = df_idf_omh[~df_idf_omh['BEC_SUBZONE'].isin(bec_excl)]
+        df_idf_omh = df_idf_omh[~df_idf_omh['BEC_SUBZONE'].isin(bec_excl)]
+
         
         ####### Okanagan scenarios #######
         df_idf_okn= df_idf[df_idf['TSA_NAME']=='Okanagan TSA']
         
+        df_idf_okn = df_idf_okn[~df_idf_okn['BEC_SUBZONE'].isin(['mm', 'mw'])]
+        
             ## scenario-1 ##
         df_idf_okn_s1 = df_idf_okn[df_idf_okn['PROJ_AGE_1'] >= 100]
         
-        df_idf_okn_s1['IDF_REDUCTION_FACTOR_S1'] = 0
+        #df_idf_okn_s1['IDF_REDUCTION_FACTOR_S1'] = 0
         
         df_idf_okn_s1['IDF_REDUCTION_FACTOR_S1'] = np.where(
-            df_idf_okn_s1['BEC_SUBZONE'].isin(['dk', 'dm']),
-            0.14,
-            np.where(
-                ~df_idf_okn_s1['BEC_SUBZONE'].isin(['mm', 'mw', 'dk', 'dm']),
-                0.5,
-                df_idf_okn_s1['IDF_REDUCTION_FACTOR_S1']
-            )
-        )
+            df_idf_okn_s1['BEC_SUBZONE'].isin(['dk', 'dm']), 0.14, 0.5)
+
         
         df_idf_okn_s1['THLB_AREA_DECREASE'] = df_idf_okn_s1['GROSS_THLB_AREA'] * df_idf_okn_s1['IDF_REDUCTION_FACTOR_S1']
+
 
             ## scenario-2 ##
         df_idf_okn_s2 = df_idf_okn[df_idf_okn['PROJ_AGE_1'] >= 60]
         
-        df_idf_okn_s2['IDF_REDUCTION_FACTOR_S2'] = 0
+        #df_idf_okn_s2['IDF_REDUCTION_FACTOR_S2'] = 0
         
         df_idf_okn_s2['IDF_REDUCTION_FACTOR_S2'] = np.where(
-            df_idf_okn_s2['BEC_SUBZONE'].isin(['dk', 'dm']),
-            0.14,
-            np.where(
-                ~df_idf_okn_s2['BEC_SUBZONE'].isin(['mm', 'mw', 'dk', 'dm']),
-                0.5,
-                df_idf_okn_s2['IDF_REDUCTION_FACTOR_S2']
-            )
-        )
+            df_idf_okn_s2['BEC_SUBZONE'].isin(['dk', 'dm']), 0.14, 0.5)
         
         df_idf_okn_s2['THLB_AREA_DECREASE'] = df_idf_okn_s2['GROSS_THLB_AREA'] * df_idf_okn_s2['IDF_REDUCTION_FACTOR_S2']
           
@@ -148,14 +141,39 @@ if __name__ == "__main__":
         
         df_ogda_sum = df_ogda.groupby(['TSA_NAME'])[['OGDA_THLB_AREA']].sum().reset_index()
         
-        df_tlhb_sumAll= df_tlhb_sumAll[['TSA_NAME', 'TSA_THLB_AREA', 'AOI_THLB_AREA']]
+        df_tlhb_sumAll_norip= df_tlhb_sumAll[['TSA_NAME', 'TSA_THLB_AREA', 'QS_THLB_AREA']]
         
-        df_ogda_fnl= pd.merge(df_tlhb_sumAll, df_ogda_sum, on='TSA_NAME')
+        df_ogda_fnl= pd.merge(df_tlhb_sumAll_norip, df_ogda_sum, on='TSA_NAME')
         
         df_ogda_fnl['OGDA_REDUCTION_FACTOR']= 1
         df_ogda_fnl['THLB_AREA_DECREASE'] = df_ogda_fnl['OGDA_THLB_AREA'] * df_ogda_fnl['OGDA_REDUCTION_FACTOR']
-        df_ogda_fnl['THLB_AREA_DECREASE_%'] = round((df_ogda_fnl['THLB_AREA_DECREASE'] / df_ogda_fnl['AOI_THLB_AREA']) * 100, 1)
-        df_ogda_fnl['THLB_AREA_REMAINING'] = df_ogda_fnl['AOI_THLB_AREA'] - df_ogda_fnl['THLB_AREA_DECREASE']
+        df_ogda_fnl['THLB_AREA_DECREASE_%'] = round((df_ogda_fnl['THLB_AREA_DECREASE'] / df_ogda_fnl['QS_THLB_AREA']) * 100, 1)
+        df_ogda_fnl['QS_THLB_AREA_REMAINING'] = df_ogda_fnl['QS_THLB_AREA'] - df_ogda_fnl['THLB_AREA_DECREASE']
+        
+        
+        print ('\nCompute Riparian summary - FBP')
+        
+        df_rip_fbp= dckCnx.execute("""SELECT* EXCLUDE geometry FROM rip_fbp_thlb_tsa""").df()
+        
+        df_rip_fbp['RIP_FBP_THLB_AREA']= df_rip_fbp['AREA_HA'] * df_rip_fbp['thlb_fact']
+        
+        df_rip_fbp_sum = df_rip_fbp.groupby(['TSA_NAME'])[['RIP_FBP_THLB_AREA']].sum().reset_index()
+        
+        df_rip_fbp_fnl= pd.merge(df_tlhb_sumAll, df_rip_fbp_sum, on='TSA_NAME')
+        
+        df_rip_fbp_fnl['RIP_REDUCTION_FACTOR']= 1
+        df_rip_fbp_fnl['THLB_AREA_DECREASE'] = df_rip_fbp_fnl['RIP_FBP_THLB_AREA'] * df_rip_fbp_fnl['RIP_REDUCTION_FACTOR']
+        df_rip_fbp_fnl['THLB_AREA_DECREASE_%'] = round((df_rip_fbp_fnl['THLB_AREA_DECREASE'] / df_rip_fbp_fnl['QS_THLB_AREA']) * 100, 1)
+        df_rip_fbp_fnl['QS_THLB_AREA_REMAINING'] = df_rip_fbp_fnl['QS_THLB_AREA'] - df_rip_fbp_fnl['THLB_AREA_DECREASE']
+        
+        '''        
+        print ('\nCompute Riparian summary - KAM')
+        
+        df_rip_kam= dckCnx.execute("""SELECT* EXCLUDE geometry FROM rip_kam_thlb""").df()
+        
+        df_rip_kam['RIP_KAM_THLB_AREA']= df_rip_kam['AREA_HA'] * df_rip_kam['thlb_fact']
+        
+
     
     except Exception as e:
         raise Exception(f"Error occurred: {e}")  
