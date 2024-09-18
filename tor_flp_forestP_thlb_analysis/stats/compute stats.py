@@ -335,7 +335,7 @@ if __name__ == "__main__":
     sheet_names=['kamloops_scenario1',
                  'kamloops_scenario2',
                  'okanagan_scenario1',
-                 'okanagan_scenario1']
+                 'okanagan_scenario2']
     
     outfile_idf= os.path.join(wks, 'outputs', f'{datetime}_idf_data.xlsx')
     export_dfs_to_sheets(dataframes, sheet_names, outfile_idf)
