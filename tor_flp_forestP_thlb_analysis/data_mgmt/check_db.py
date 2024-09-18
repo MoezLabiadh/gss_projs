@@ -7,7 +7,7 @@ conn = duckdb.connect(db)
 conn.install_extension('spatial')
 conn.load_extension('spatial')
 
-#conn.execute("""DROP TABLE IF EXISTS ogda_thlb_aoi;""")
+#conn.execute("""DROP TABLE IF EXISTS rip_kam_thlb;""")
 #conn.execute("""ALTER TABLE idf_thlb_tsa_mdwr DROP COLUMN IF EXISTS geometry;""")
 #conn.execute("""ALTER TABLE idf_thlb_tsa_mdwr RENAME COLUMN geometry_1 TO geometry;""")
 
