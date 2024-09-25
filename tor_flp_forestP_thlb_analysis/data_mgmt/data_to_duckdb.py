@@ -164,6 +164,9 @@ if __name__ == "__main__":
         #loc_dict['mdwr_kam']= os.path.join(gdb, 'mdwr_kam')
         #loc_dict['mdwr_kam']= os.path.join(gdb, 'mdwr_kam')
         #loc_dict['ogda']= os.path.join(gdb, 'ogda')
+        #loc_dict['thlb']= os.path.join(gdb, 'thlb_tsas')
+        #loc_dict['tsa_qs']= os.path.join(gdb, 'tsa_qs')
+        #loc_dict['riparian_buffers_fbp']= os.path.join(gdb, 'merged_dissolved_rip_fbp_modified')
 
         
         data_dict= {}
