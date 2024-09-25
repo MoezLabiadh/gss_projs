@@ -27,36 +27,22 @@ class DuckDBConnector:
 
 def load_dck_sql():
     dkSql= {}
-    '''           
-    dkSql['ogda_thlb']="""
-        CREATE TABLE ogda_thlb AS
-            SELECT 
-              ogd.OGSR_PDAC_SYSID, 
-              thlb.thlb_fact,
-              ST_Intersection(ogd.geometry, thlb.geometry) AS geometry
-              
-            FROM 
-              ogda ogd
-                  JOIN 
-              thlb ON ST_Intersects(ogd.geometry, thlb.geometry);
-              
-                    """
-    '''                
+       
     dkSql['ogda_thlb_tsa']="""
         CREATE TABLE ogda_thlb_tsa AS
             SELECT 
-              tsa.TSA_NUMBER_DESCRIPTION AS TSA_NAME,
-              thlb.OGSR_PDAC_SYSID,
+              thlb.TSA_NAME,
+              ogda.OGSR_PDAC_SYSID,
               thlb.thlb_fact,
-              ST_Area(ST_Intersection(tsa.geometry, thlb.geometry)) / 10000.0 AS AREA_HA,
-              ST_Intersection(tsa.geometry, thlb.geometry) AS geometry
+              ST_Area(ST_Intersection(ogda.geometry, thlb.geometry)) / 10000.0 AS AREA_HA,
+              ST_Intersection(ogda.geometry, thlb.geometry) AS geometry
               
             FROM 
-                tsa_planArea tsa
+                ogda
             JOIN 
-                ogda_thlb thlb
+                thlb_tsa_qs thlb
             ON 
-                ST_Intersects(tsa.geometry, thlb.geometry); 
+                ST_Intersects(ogda.geometry, thlb.geometry); 
                 """
 
    
