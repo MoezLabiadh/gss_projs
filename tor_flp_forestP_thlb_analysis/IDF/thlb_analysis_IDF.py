@@ -28,13 +28,12 @@ class DuckDBConnector:
 def load_dck_sql():
     dkSql= {}
 
- 
 
-    '''
     ########### IDF THLB intersection ##############               
-    dkSql['idf_thlb']="""
-        CREATE TABLE idf_thlb AS
+    dkSql['idf_thlb_tsa']="""
+        CREATE TABLE idf_thlb_tsa AS 
             SELECT 
+              thlb.TSA_NAME,  
               idf.*,
               thlb.thlb_fact,
               ST_Intersection(idf.geometry, thlb.geometry) AS geometry
@@ -42,38 +41,22 @@ def load_dck_sql():
             FROM 
               idf
                   JOIN 
-              thlb ON ST_Intersects(idf.geometry, thlb.geometry);
+              thlb_tsa_qs AS thlb 
+                  ON ST_Intersects(idf.geometry, thlb.geometry);
             
      -- Fix geometry field name
-     ALTER TABLE idf_thlb DROP COLUMN IF EXISTS GEOMETRY;  
-     ALTER TABLE idf_thlb RENAME COLUMN geometry_1 TO geometry;     
+     ALTER TABLE idf_thlb_tsa DROP COLUMN IF EXISTS geometry;  
+     ALTER TABLE idf_thlb_tsa RENAME COLUMN geometry_1 TO geometry;     
                     """
 
-    dkSql['idf_thlb_tsa']="""
-        CREATE TABLE idf_thlb_tsa AS
-            SELECT 
-              tsa.TSA_NUMBER_DESCRIPTION AS TSA_NAME,
-              thlb.*,
-              ST_Intersection(tsa.geometry, thlb.geometry) AS geometry
-              
-            FROM 
-                tsa_planArea tsa
-            JOIN 
-                idf_thlb thlb
-            ON 
-                ST_Intersects(tsa.geometry, thlb.geometry); 
-        
-        -- Fix geometry field name
-        ALTER TABLE idf_thlb_tsa DROP COLUMN IF EXISTS geometry;  
-        ALTER TABLE idf_thlb_tsa RENAME COLUMN geometry_1 TO geometry;  
-                    """
-    ''' 
+
     
+    ########### IDF THLB TSA MDWR intersection ##############  
     dkSql['idf_thlb_tsa_mdwr']="""
         CREATE TABLE idf_thlb_tsa_mdwr AS
             SELECT 
               thlb.*,
-              mdr.LEGAL_FEAT_PROVID,
+              mdr.LEGAL_FEAT_PROVID AS MDWR_OVERLAP,
               COALESCE(ST_Area(ST_Intersection(mdr.geometry, thlb.geometry)) / 10000.0, ST_Area(thlb.geometry) / 10000.0) AS AREA_HA,
               COALESCE(ST_Intersection(mdr.geometry, thlb.geometry), thlb.geometry) AS geometry
             FROM 
@@ -89,125 +72,6 @@ def load_dck_sql():
         ALTER TABLE idf_thlb_tsa_mdwr RENAME COLUMN geometry_1 TO geometry;  
                     """
 
-
-
-    '''
-    ########### TSA/Plan Area total THLB calulcation ##############  
-    dkSql['tsa_full_thlb']="""
-        CREATE TABLE tsa_full_thlb AS
-            SELECT 
-              tsa.TSA_NUMBER_DESCRIPTION AS TSA_NAME,
-              thlb.thlb_fact,
-              ST_Area(ST_Intersection(tsa.geometry, thlb.geometry)) / 10000.0 AS AREA_HA,
-              (ST_Area(ST_Intersection(tsa.geometry, thlb.geometry)) / 10000.0) * thlb.thlb_fact AS THLB_AREA,
-              ST_Intersection(tsa.geometry, thlb.geometry) AS geometry
-              
-            FROM 
-              tsa
-                  JOIN 
-              thlb ON ST_Intersects(tsa.geometry, thlb.geometry);  
-                    """
-                    
-                    
-    dkSql['tsa_planA_thlb']="""
-        CREATE TABLE tsa_planA_thlb AS
-            SELECT 
-              tsa.TSA_NUMBER_DESCRIPTION AS TSA_NAME,
-              thlb.thlb_fact,
-              ST_Area(ST_Intersection(tsa.geometry, thlb.geometry)) / 10000.0 AS AREA_HA,
-              (ST_Area(ST_Intersection(tsa.geometry, thlb.geometry)) / 10000.0) * thlb.thlb_fact AS THLB_AREA,
-              ST_Intersection(tsa.geometry, thlb.geometry) AS geometry
-              
-            FROM 
-              tsa_planArea tsa
-                  JOIN 
-              thlb ON ST_Intersects(tsa.geometry, thlb.geometry);  
-                    """   
-                    
-    ########### Okanagan Scenarios ##############
-    dkSql['idf_thlb_okanagan_scenario1']="""
-        CREATE TABLE idf_thlb_okanagan_scenario1 AS
-            SELECT 
-                tsa.TSA_NUMBER_DESCRIPTION AS TSA_NAME,
-                thlb.POLYGON_ID,
-                thlb.BEC_ZONE_CODE,
-                thlb.BEC_SUBZONE,
-                thlb.QUAD_DIAM_125,
-                thlb.PROJ_AGE_1,
-                thlb.LIVE_STAND_VOLUME_125,
-                thlb.thlb_fact,
-                
-                ST_Area(ST_Intersection(tsa.geometry, thlb.geometry)) / 10000.0 AS AREA_HA,  -- Area in hectares
-                (ST_Area(ST_Intersection(tsa.geometry, thlb.geometry)) / 10000.0) * thlb.thlb_fact AS THLB_AREA,
-                
-                CASE
-                    WHEN thlb.BEC_SUBZONE NOT IN ('mm', 'mw', 'dk', 'dm', 'mw') THEN 0.5  -- 50% reduction factor
-                    WHEN thlb.BEC_SUBZONE IN ('dk', 'dm', 'mw') THEN 0.14  -- 14% reduction factor
-                    ELSE 0  -- No reduction
-                END AS REDUCTION_FACTOR,
-                
-                ((ST_Area(ST_Intersection(tsa.geometry, thlb.geometry)) / 10000.0) * thlb.thlb_fact) * 
-                (1 - CASE
-                         WHEN thlb.BEC_SUBZONE NOT IN ('mm', 'mw', 'dk', 'dm', 'mw') THEN 0.5
-                         WHEN thlb.BEC_SUBZONE IN ('dk', 'dm', 'mw') THEN 0.14
-                         ELSE 0
-                 END) AS THLB_IMPACT,  -- THLB area after reduction
-                    
-                ST_Intersection(tsa.geometry, thlb.geometry) AS geometry  -- geometry column
-                
-            FROM 
-                tsa_planArea tsa
-            JOIN 
-                idf_thlb thlb
-            ON 
-                ST_Intersects(tsa.geometry, thlb.geometry)  -- Spatial join condition
-            WHERE 
-                tsa.TSA_NUMBER_DESCRIPTION = 'Okanagan TSA'
-                AND thlb.PROJ_AGE_1 >= 100;
-                    """                               
-        
-                
-    dkSql['idf_thlb_okanagan_scenario2']="""
-        CREATE TABLE idf_thlb_okanagan_scenario2 AS
-            SELECT 
-                tsa.TSA_NUMBER_DESCRIPTION AS TSA_NAME,
-                thlb.POLYGON_ID,
-                thlb.BEC_ZONE_CODE,
-                thlb.BEC_SUBZONE,
-                thlb.QUAD_DIAM_125,
-                thlb.PROJ_AGE_1,
-                thlb.LIVE_STAND_VOLUME_125,
-                thlb.thlb_fact,
-                
-                ST_Area(ST_Intersection(tsa.geometry, thlb.geometry)) / 10000.0 AS AREA_HA,  -- Area in hectares
-                (ST_Area(ST_Intersection(tsa.geometry, thlb.geometry)) / 10000.0) * thlb.thlb_fact AS THLB_AREA,
-                
-                CASE
-                    WHEN thlb.BEC_SUBZONE NOT IN ('mm', 'mw', 'dk', 'dm', 'mw') THEN 0.5  -- 50% reduction factor
-                    WHEN thlb.BEC_SUBZONE IN ('dk', 'dm', 'mw') THEN 0.14  -- 14% reduction factor
-                    ELSE 0  -- No reduction
-                END AS REDUCTION_FACTOR,
-                
-                ((ST_Area(ST_Intersection(tsa.geometry, thlb.geometry)) / 10000.0) * thlb.thlb_fact) * 
-                (1 - CASE
-                         WHEN thlb.BEC_SUBZONE NOT IN ('mm', 'mw', 'dk', 'dm', 'mw') THEN 0.5
-                         WHEN thlb.BEC_SUBZONE IN ('dk', 'dm', 'mw') THEN 0.14
-                         ELSE 0
-                 END) AS THLB_IMPACT,  -- THLB area after reduction
-                    
-                ST_Intersection(tsa.geometry, thlb.geometry) AS geometry  -- geometry column
-                
-            FROM 
-                tsa_planArea tsa
-            JOIN 
-                idf_thlb thlb
-            ON 
-                ST_Intersects(tsa.geometry, thlb.geometry)  -- Spatial join condition
-            WHERE 
-                tsa.TSA_NUMBER_DESCRIPTION = 'Okanagan TSA'
-                AND thlb.PROJ_AGE_1 >= 60;
-                    """   
-    '''             
     return dkSql
 
 
