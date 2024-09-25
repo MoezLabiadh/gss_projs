@@ -110,13 +110,17 @@ if __name__ == "__main__":
 
         print ('\nCompute Gross THLB summaries')
         # thlb by TSA (whole tsa)
-        df_tlhb_tsa= dckCnx.execute("""SELECT* EXCLUDE geometry FROM tsa_full_thlb""").df()
+        df_tlhb_tsa= dckCnx.execute("""SELECT* EXCLUDE geometry FROM thlb""").df()
+        df_tlhb_tsa= df_tlhb_tsa.rename(columns={'tsa_number_description': 'TSA_NAME',
+                                                 'thlb_area_ha': 'THLB_AREA'})
         df_tlhb_tsa_sum = df_tlhb_tsa.groupby(['TSA_NAME'])[['THLB_AREA']].sum().reset_index().rename(columns={'THLB_AREA': 'TSA_THLB_AREA'})
         
-   
+
+        
         # thlb by TSA (in plan area)
-        df_tlhb_qs= dckCnx.execute("""SELECT*  EXCLUDE geometry FROM tsa_planA_thlb""").df() 
-        df_tlhb_qs_sum = df_tlhb_qs.groupby(['TSA_NAME'])[['THLB_AREA']].sum().reset_index().rename(columns={'THLB_AREA': 'QS_THLB_AREA'})
+        df_tlhb_qs= dckCnx.execute("""SELECT*  EXCLUDE geometry FROM thlb_tsa_qs""").df() 
+        df_tlhb_qs['QS_THLB_AREA']= df_tlhb_qs['AREA_HA'] * df_tlhb_qs['thlb_fact']
+        df_tlhb_qs_sum = df_tlhb_qs.groupby(['TSA_NAME'])[['QS_THLB_AREA']].sum().reset_index()
         
         df_tlhb_qs_sum['RIP_ADJUST_FACTOR'] = np.where(
                 df_tlhb_qs_sum['TSA_NAME'] == '100 Mile House TSA', 0.02,
@@ -129,14 +133,31 @@ if __name__ == "__main__":
         
         
         df_tlhb_sumAll= pd.merge(df_tlhb_tsa_sum, df_tlhb_qs_sum, on='TSA_NAME')
+        
+        
+        
+        print ('\nCompute OGDA summary')
+        
+        df_ogda= dckCnx.execute("""SELECT* EXCLUDE geometry FROM ogda_thlb_tsa""").df()
+        
+        df_ogda['OGDA_THLB_AREA']= df_ogda['AREA_HA'] * df_ogda['thlb_fact']
+        
+        df_ogda_sum = df_ogda.groupby(['TSA_NAME'])[['OGDA_THLB_AREA']].sum().reset_index()
+        
+        df_tlhb_sumAll_norip= df_tlhb_sumAll[['TSA_NAME', 'TSA_THLB_AREA', 'QS_THLB_AREA']]
+        
+        df_ogda_fnl= pd.merge(df_tlhb_sumAll_norip, df_ogda_sum, on='TSA_NAME')
+        
+        df_ogda_fnl['OGDA_REDUCTION_FACTOR']= 1
+        df_ogda_fnl['THLB_AREA_DECREASE'] = df_ogda_fnl['OGDA_THLB_AREA'] * df_ogda_fnl['OGDA_REDUCTION_FACTOR']
+        df_ogda_fnl['THLB_AREA_DECREASE_%'] = round((df_ogda_fnl['THLB_AREA_DECREASE'] / df_ogda_fnl['QS_THLB_AREA']) * 100, 1)
+        df_ogda_fnl['QS_THLB_AREA_REMAINING'] = df_ogda_fnl['QS_THLB_AREA'] - df_ogda_fnl['THLB_AREA_DECREASE']
 
 
 
         print ('\nCompute IDF summaries')
         
         df_idf= dckCnx.execute("""SELECT* EXCLUDE geometry FROM idf_thlb_tsa_mdwr""").df()
-        
-        df_idf.rename(columns={'LEGAL_FEAT_PROVID': 'MDWR_OVERLAP'}, inplace=True)
         
         df_idf['IDF_THLB_AREA']= df_idf['AREA_HA'] * df_idf['thlb_fact']
         
@@ -258,23 +279,6 @@ if __name__ == "__main__":
         df_idf_fnl = pd.concat([df_idf_okn_fnl, df_idf_kam_fnl], ignore_index=True)
         
         
-        print ('\nCompute OGDA summary')
-        
-        df_ogda= dckCnx.execute("""SELECT* EXCLUDE geometry FROM ogda_thlb_tsa""").df()
-        
-        df_ogda['OGDA_THLB_AREA']= df_ogda['AREA_HA'] * df_ogda['thlb_fact']
-        
-        df_ogda_sum = df_ogda.groupby(['TSA_NAME'])[['OGDA_THLB_AREA']].sum().reset_index()
-        
-        df_tlhb_sumAll_norip= df_tlhb_sumAll[['TSA_NAME', 'TSA_THLB_AREA', 'QS_THLB_AREA']]
-        
-        df_ogda_fnl= pd.merge(df_tlhb_sumAll_norip, df_ogda_sum, on='TSA_NAME')
-        
-        df_ogda_fnl['OGDA_REDUCTION_FACTOR']= 1
-        df_ogda_fnl['THLB_AREA_DECREASE'] = df_ogda_fnl['OGDA_THLB_AREA'] * df_ogda_fnl['OGDA_REDUCTION_FACTOR']
-        df_ogda_fnl['THLB_AREA_DECREASE_%'] = round((df_ogda_fnl['THLB_AREA_DECREASE'] / df_ogda_fnl['QS_THLB_AREA']) * 100, 1)
-        df_ogda_fnl['QS_THLB_AREA_REMAINING'] = df_ogda_fnl['QS_THLB_AREA'] - df_ogda_fnl['THLB_AREA_DECREASE']
-        
         
         print ('\nCompute Riparian summary - FBP')
         
@@ -310,14 +314,14 @@ if __name__ == "__main__":
         df_rip_kam_fnl['THLB_AREA_DECREASE_%'] = round((df_rip_kam_fnl['THLB_AREA_DECREASE'] / df_rip_kam_fnl['QS_THLB_AREA']) * 100, 1)
         df_rip_kam_fnl['QS_THLB_AREA_REMAINING'] = df_rip_kam_fnl['QS_THLB_AREA'] - df_rip_kam_fnl['THLB_AREA_DECREASE']
         
-    
+   
     except Exception as e:
         raise Exception(f"Error occurred: {e}")  
     
     finally: 
         Duckdb.disconnect_db()
         
-        
+    '''    
     print ('\n Export summary tables') 
     dfs= [df_idf_fnl, df_ogda_fnl, df_rip_fbp_fnl, df_rip_kam_fnl]
     datetime= datetime.now().strftime("%Y%m%d_%H%M")
@@ -325,7 +329,7 @@ if __name__ == "__main__":
     write_dfs_to_excel(dfs, outfile)
     
 
-    '''
+ 
     print ('\n Export IDF datasets') 
     dataframes=[df_idf_kam_s1,
                 df_idf_kam_s2,
@@ -340,8 +344,6 @@ if __name__ == "__main__":
     outfile_idf= os.path.join(wks, 'outputs', f'{datetime}_idf_data.xlsx')
     export_dfs_to_sheets(dataframes, sheet_names, outfile_idf)
     '''
-
-    
     finish_t = timeit.default_timer() #finish time
     t_sec = round(finish_t-start_t)
     mins = int (t_sec/60)
