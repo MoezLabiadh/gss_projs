@@ -28,33 +28,21 @@ class DuckDBConnector:
 def load_dck_sql():
     dkSql= {}
              
-    dkSql['rip_fbp_thlb']="""
-        CREATE TABLE rip_fbp_thlb AS
-            SELECT 
-              thlb.thlb_fact,
-              ST_Intersection(rip.geometry, thlb.geometry) AS geometry
-              
-            FROM 
-              riparian_buffers_fbp rip
-                  JOIN 
-              thlb ON ST_Intersects(rip.geometry, thlb.geometry);
-              
-                    """
-                 
+            
     dkSql['rip_fbp_thlb_tsa']="""
         CREATE TABLE rip_fbp_thlb_tsa AS
             SELECT 
-              tsa.TSA_NUMBER_DESCRIPTION AS TSA_NAME,
+              thlb.TSA_NAME,
               thlb.thlb_fact,
-              ST_Area(ST_Intersection(tsa.geometry, thlb.geometry)) / 10000.0 AS AREA_HA,
-              ST_Intersection(tsa.geometry, thlb.geometry) AS geometry
+              ST_Area(ST_Intersection(rip.geometry, thlb.geometry)) / 10000.0 AS AREA_HA,
+              ST_Intersection(rip.geometry, thlb.geometry) AS geometry
               
             FROM 
-                tsa_planArea tsa
+                riparian_buffers_fbp rip
             JOIN 
-                rip_fbp_thlb thlb
+                thlb_tsa_qs thlb
             ON 
-                ST_Intersects(tsa.geometry, thlb.geometry); 
+                ST_Intersects(rip.geometry, thlb.geometry); 
                 """
 
    
