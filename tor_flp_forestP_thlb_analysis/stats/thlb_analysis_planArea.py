@@ -28,23 +28,20 @@ class DuckDBConnector:
 def load_dck_sql():
     dkSql= {}
 
-    dkSql['thlb_plan_areas']="""
+    dkSql['thlb_tsa_qs']="""
     --Create a table for Gross THLB calulcation - THLB by plan area
-        CREATE TABLE thlb_plan_areas AS
-            SELECT 
-              aoi.TSA_NUMBER_DESCRIPTION AS TSA_NAME,
-              aoi.WATERSHED_GROUP_NAME AS PLAN_AREA_NAME,
-              thlb.thlb_fact,
-              ROUND(ST_Area(
-                      ST_Intersection(aoi.geometry, thlb.geometry))/10000, 4) AS AREA_HA,
-              ROUND(ST_Area(
-                      ST_Intersection(aoi.geometry, thlb.geometry))/10000 * thlb.thlb_fact, 4) AS GROSS_THLB_AREA_HA,
-              
-              --ST_Intersection(aoi.geometry, thlb.geometry) AS geometry
-              
-            FROM 
-              tsa_plan_areas AS aoi
-                  JOIN thlb ON ST_Intersects(aoi.geometry, thlb.geometry);    
+    CREATE TABLE thlb_tsa_qs AS
+        SELECT 
+          aoi.TSA_NUMBER_DESCRIPTION AS TSA_NAME,
+          thlb.thlb_fact,
+          ROUND(ST_Area(
+                  ST_Intersection(aoi.geometry, thlb.geometry))/10000, 4) AS AREA_HA,
+          ST_Intersection(aoi.geometry, thlb.geometry) AS geometry
+        FROM 
+          tsa_qs AS aoi
+          JOIN thlb ON ST_Intersects(aoi.geometry, thlb.geometry)
+        WHERE 
+          aoi.TSA_NUMBER_DESCRIPTION = thlb.tsa_number_description --removes overlapping thlb geometries;  
                     """
                                
     
@@ -81,17 +78,7 @@ if __name__ == "__main__":
     try:
         print ('Run Queries')
         dksql= load_dck_sql()
-        #run_duckdb_queries (dckCnx, dksql) 
-        
-        
-        print ('Compute stats')
-        df= dckCnx.execute("""SELECT* FROM thlb_plan_areas""").df()
-        
-        
-        df_sum = df.groupby(['TSA_NAME', 'PLAN_AREA_NAME'])[['AREA_HA', 'GROSS_THLB_AREA_HA']].sum().reset_index()
-        
-        df_sum_tsa_gross = df.groupby(['TSA_NAME'])[['AREA_HA', 'GROSS_THLB_AREA_HA']].sum().reset_index()
-       
+        run_duckdb_queries (dckCnx, dksql) 
         
         
     except Exception as e:
