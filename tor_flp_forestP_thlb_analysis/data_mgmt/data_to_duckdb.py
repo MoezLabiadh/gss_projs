@@ -134,6 +134,9 @@ def add_data_to_duckdb(dckCnx, data_dict):
                     FROM chunk;
                 """
                 dckCnx.execute(insert_query)
+                
+        #Add a spatial index to the table
+        dckCnx.execute(f'CREATE INDEX idx_{k} ON {k} USING RTREE (GEOMETRY);')
 
         counter += 1
 
@@ -167,6 +170,9 @@ if __name__ == "__main__":
         #loc_dict['thlb']= os.path.join(gdb, 'thlb_tsas')
         #loc_dict['tsa_qs']= os.path.join(gdb, 'tsa_qs')
         #loc_dict['riparian_buffers_fbp']= os.path.join(gdb, 'merged_dissolved_rip_fbp_modified')
+        loc_dict['r2_ogda_outside_rip']= os.path.join(gdb, 'r2_ogda_outside_rip')
+        loc_dict['r2_rip_outside_ogda']= os.path.join(gdb, 'r2_rip_outside_ogda')
+        loc_dict['r2_rip_overlap_ogda']= os.path.join(gdb, 'r2_rip_overlap_ogda')
 
         
         data_dict= {}
