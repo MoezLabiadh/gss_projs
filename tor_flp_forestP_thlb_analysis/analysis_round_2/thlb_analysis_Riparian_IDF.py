@@ -69,7 +69,7 @@ def load_dck_sql():
 
         
         -- Fix geometry field name
-        ALTER TABLE r2_2_rip_idf_thlb DROP COLUMN IF EXISTS geometry;  
+        ALTER TABLE r2_2_rip_idf_thlb_mdwr DROP COLUMN IF EXISTS geometry;  
                     """                 
     return dkSql
 
