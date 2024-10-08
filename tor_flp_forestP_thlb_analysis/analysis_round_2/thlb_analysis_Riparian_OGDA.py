@@ -27,57 +27,24 @@ class DuckDBConnector:
 
 def load_dck_sql():
     dkSql= {}
-             
-    dkSql['r2_rip_outside_ogda_thlb']="""
-         CREATE TABLE r2_rip_outside_ogda_thlb AS
+       
+    dkSql['r2_2_rip_ogda_thlb']="""
+         CREATE TABLE r2_2_rip_ogda_thlb AS
              SELECT 
                thlb.TSA_NAME,
+               rpog.OVERLAP_TYPE,
                thlb.thlb_fact,
-               ST_Area(ST_Intersection(rip.geometry, thlb.geometry)) / 10000.0 AS AREA_HA,
-               ST_Intersection(rip.geometry, thlb.geometry) AS geometry
+               ST_Area(ST_Intersection(rpog.geometry, thlb.geometry)) / 10000.0 AS AREA_HA
+               --ST_Intersection(rpog.geometry, thlb.geometry) AS geometry
                
              FROM 
-                 r2_rip_outside_ogda rip
+                 r2_2_rip_ogda rpog
              JOIN 
                  thlb_tsa_qs thlb
              ON 
-                 ST_Intersects(rip.geometry, thlb.geometry); 
+                 ST_Intersects(rpog.geometry, thlb.geometry); 
                  """  
-
-    dkSql['r2_ogda_outside_rip_thlb']="""
-         CREATE TABLE r2_ogda_outside_rip_thlb AS
-             SELECT 
-               thlb.TSA_NAME,
-               thlb.thlb_fact,
-               ogda.OGSR_PDAC_SYSID,
-               ST_Area(ST_Intersection(ogda.geometry, thlb.geometry)) / 10000.0 AS AREA_HA,
-               ST_Intersection(ogda.geometry, thlb.geometry) AS geometry
-               
-             FROM 
-                 r2_ogda_outside_rip ogda
-             JOIN 
-                 thlb_tsa_qs thlb
-             ON 
-                 ST_Intersects(ogda.geometry, thlb.geometry); 
-                 """  
-
-    dkSql['r2_rip_overlap_ogda_thlb']="""
-         CREATE TABLE r2_rip_overlap_ogda_thlb AS
-             SELECT 
-               thlb.TSA_NAME,
-               thlb.thlb_fact,
-               ogda.OGSR_PDAC_SYSID,
-               ST_Area(ST_Intersection(rpog.geometry, thlb.geometry)) / 10000.0 AS AREA_HA,
-               ST_Intersection(rpog.geometry, thlb.geometry) AS geometry
-               
-             FROM 
-                 r2_rip_overlap_ogda rpog
-             JOIN 
-                 thlb_tsa_qs thlb
-             ON 
-                 ST_Intersects(rpog.geometry, thlb.geometry);
-                 """
-                             
+                     
     return dkSql
 
 
