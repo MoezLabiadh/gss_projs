@@ -136,6 +136,7 @@ def add_data_to_duckdb(dckCnx, data_dict):
                 dckCnx.execute(insert_query)
                 
         #Add a spatial index to the table
+        print(f'....creating a spatial RTREE index')
         dckCnx.execute(f'CREATE INDEX idx_{k} ON {k} USING RTREE (GEOMETRY);')
 
         counter += 1
@@ -170,10 +171,13 @@ if __name__ == "__main__":
         #loc_dict['thlb']= os.path.join(gdb, 'thlb_tsas')
         #loc_dict['tsa_qs']= os.path.join(gdb, 'tsa_qs')
         #loc_dict['riparian_buffers_fbp']= os.path.join(gdb, 'merged_dissolved_rip_fbp_modified')
-        loc_dict['r2_ogda_outside_rip']= os.path.join(gdb, 'r2_ogda_outside_rip')
-        loc_dict['r2_rip_outside_ogda']= os.path.join(gdb, 'r2_rip_outside_ogda')
-        loc_dict['r2_rip_overlap_ogda']= os.path.join(gdb, 'r2_rip_overlap_ogda')
+        
+        #round 2 of analysis
 
+        #loc_dict['r2_2_rip_ogda']= os.path.join(gdb, 'r2_2_rip_ogda')
+        #loc_dict['r2_2_rip_idf']= os.path.join(gdb, 'r2_2_rip_idf')
+        #loc_dict['r2_2_rip_idf_ogda_thlb']= os.path.join(gdb, 'r2_2_rip_idf_ogda_thlb')
+        loc_dict['r2_2_rip_idf_thlb']= os.path.join(gdb, 'r2_2_rip_idf_thlb')
         
         data_dict= {}
         
@@ -192,8 +196,8 @@ if __name__ == "__main__":
     
         
     
-    finish_t = timeit.default_timer() #finish time
-    t_sec = round(finish_t-start_t)
-    mins = int (t_sec/60)
-    secs = int (t_sec%60)
-    print (f'\nProcessing Completed in {mins} minutes and {secs} seconds')  
+        finish_t = timeit.default_timer() #finish time
+        t_sec = round(finish_t-start_t)
+        mins = int (t_sec/60)
+        secs = int (t_sec%60)
+        print (f'\nProcessing Completed in {mins} minutes and {secs} seconds')  
