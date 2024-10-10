@@ -325,8 +325,6 @@ if __name__ == "__main__":
             (df_rpdfog_kam['PROJ_AGE_1'] >= 60) | df_rpdfog_kam['PROJ_AGE_1'].isnull()
         ]
         
-        
-
         df_rpdfog_kam_s2['REDUCTION_FACTOR_S2'] = np.where(
             df_rpdfog_kam_s2['OVERLAP_TYPE'] != 'IDF only', 
             1, 
