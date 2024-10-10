@@ -19,7 +19,7 @@ conn.load_extension('spatial')
 
 tabs= conn.execute("""SHOW TABLES""").df()
 
-#sql= """SELECT* EXCLUDE GEOMETRY FROM r2_2_rip_idf_thlb_mdwr"""
+#sql= """SELECT* EXCLUDE geometry FROM r2_2_rip_idf_thlb_mdwr"""
 sql= """SELECT*  FROM r2_2_rip_idf_thlb_mdwr"""
 
 
