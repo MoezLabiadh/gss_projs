@@ -115,7 +115,7 @@ if __name__ == "__main__":
         
         df_rpog['THLB_AREA_DECREASE']= df_rpog['AREA_HA'] * df_rpog['thlb_fact']
         
-        df_rpog_sum = df_rpog.groupby(['TSA_NAME'])[['THLB_AREA_DECREASE']].sum().reset_index()
+        df_rpog_sum = df_rpog.groupby(['TSA_NAME', 'OVERLAP_TYPE'])[['THLB_AREA_DECREASE']].sum().reset_index()
 
         
 
@@ -150,7 +150,7 @@ if __name__ == "__main__":
         
         df_rpdf_okn_s1['THLB_AREA_DECREASE'] = df_rpdf_okn_s1['THLB_AREA'] * df_rpdf_okn_s1['REDUCTION_FACTOR_S1']
         
-        df_rpdf_okn_s1_sum = df_rpdf_okn_s1.groupby(['TSA_NAME'])[['THLB_AREA_DECREASE']].sum().reset_index()
+        df_rpdf_okn_s1_sum = df_rpdf_okn_s1.groupby(['TSA_NAME', 'OVERLAP_TYPE'])[['THLB_AREA_DECREASE']].sum().reset_index()
         
         df_rpdf_okn_s1_sum.insert(1, 'SCENARIO', 'Scenario 1')
         
@@ -171,7 +171,7 @@ if __name__ == "__main__":
         
         df_rpdf_okn_s2['THLB_AREA_DECREASE'] = df_rpdf_okn_s2['THLB_AREA'] * df_rpdf_okn_s2['REDUCTION_FACTOR_S2']
         
-        df_rpdf_okn_s2_sum = df_rpdf_okn_s2.groupby(['TSA_NAME'])[['THLB_AREA_DECREASE']].sum().reset_index()
+        df_rpdf_okn_s2_sum = df_rpdf_okn_s2.groupby(['TSA_NAME', 'OVERLAP_TYPE'])[['THLB_AREA_DECREASE']].sum().reset_index()
         
         df_rpdf_okn_s2_sum.insert(1, 'SCENARIO', 'Scenario 2')
         
@@ -202,7 +202,7 @@ if __name__ == "__main__":
         
         df_rpdf_kam_s1['THLB_AREA_DECREASE'] = df_rpdf_kam_s1['THLB_AREA'] * df_rpdf_kam_s1['REDUCTION_FACTOR_S1']
         
-        df_rpdf_kam_s1_sum = df_rpdf_kam_s1.groupby(['TSA_NAME'])[['THLB_AREA_DECREASE']].sum().reset_index()
+        df_rpdf_kam_s1_sum = df_rpdf_kam_s1.groupby(['TSA_NAME', 'OVERLAP_TYPE'])[['THLB_AREA_DECREASE']].sum().reset_index()
         
         df_rpdf_kam_s1_sum.insert(1, 'SCENARIO', 'Scenario 1')
 
@@ -224,7 +224,7 @@ if __name__ == "__main__":
         
         df_rpdf_kam_s2['THLB_AREA_DECREASE'] = df_rpdf_kam_s2['THLB_AREA'] * df_rpdf_kam_s2['REDUCTION_FACTOR_S2']
         
-        df_rpdf_kam_s2_sum = df_rpdf_kam_s2.groupby(['TSA_NAME'])[['THLB_AREA_DECREASE']].sum().reset_index()
+        df_rpdf_kam_s2_sum = df_rpdf_kam_s2.groupby(['TSA_NAME', 'OVERLAP_TYPE'])[['THLB_AREA_DECREASE']].sum().reset_index()
         
         df_rpdf_kam_s2_sum.insert(1, 'SCENARIO', 'Scenario 2')
 
@@ -267,7 +267,7 @@ if __name__ == "__main__":
         
         df_rpdfog_okn_s1['THLB_AREA_DECREASE'] = df_rpdfog_okn_s1['THLB_AREA'] * df_rpdfog_okn_s1['REDUCTION_FACTOR_S1']
         
-        df_rpdfog_okn_s1_sum = df_rpdfog_okn_s1.groupby(['TSA_NAME'])[['THLB_AREA_DECREASE']].sum().reset_index()
+        df_rpdfog_okn_s1_sum = df_rpdfog_okn_s1.groupby(['TSA_NAME', 'OVERLAP_TYPE'])[['THLB_AREA_DECREASE']].sum().reset_index()
         
         df_rpdfog_okn_s1_sum.insert(1, 'SCENARIO', 'Scenario 1')
         
@@ -287,7 +287,7 @@ if __name__ == "__main__":
         
         df_rpdfog_okn_s2['THLB_AREA_DECREASE'] = df_rpdfog_okn_s2['THLB_AREA'] * df_rpdfog_okn_s2['REDUCTION_FACTOR_S2']
         
-        df_rpdfog_okn_s2_sum = df_rpdfog_okn_s2.groupby(['TSA_NAME'])[['THLB_AREA_DECREASE']].sum().reset_index()
+        df_rpdfog_okn_s2_sum = df_rpdfog_okn_s2.groupby(['TSA_NAME', 'OVERLAP_TYPE'])[['THLB_AREA_DECREASE']].sum().reset_index()
         
         df_rpdfog_okn_s2_sum.insert(1, 'SCENARIO', 'Scenario 2')
         
@@ -316,7 +316,7 @@ if __name__ == "__main__":
         
         df_rpdfog_kam_s1['THLB_AREA_DECREASE'] = df_rpdfog_kam_s1['THLB_AREA'] * df_rpdfog_kam_s1['REDUCTION_FACTOR_S1']
         
-        df_rpdfog_kam_s1_sum = df_rpdfog_kam_s1.groupby(['TSA_NAME'])[['THLB_AREA_DECREASE']].sum().reset_index()
+        df_rpdfog_kam_s1_sum = df_rpdfog_kam_s1.groupby(['TSA_NAME', 'OVERLAP_TYPE'])[['THLB_AREA_DECREASE']].sum().reset_index()
         
         df_rpdfog_kam_s1_sum.insert(1, 'SCENARIO', 'Scenario 1')
         
@@ -333,7 +333,7 @@ if __name__ == "__main__":
         
         df_rpdfog_kam_s2['THLB_AREA_DECREASE'] = df_rpdfog_kam_s2['THLB_AREA'] * df_rpdfog_kam_s2['REDUCTION_FACTOR_S2']
         
-        df_rpdfog_kam_s2_sum = df_rpdfog_kam_s2.groupby(['TSA_NAME'])[['THLB_AREA_DECREASE']].sum().reset_index()
+        df_rpdfog_kam_s2_sum = df_rpdfog_kam_s2.groupby(['TSA_NAME', 'OVERLAP_TYPE'])[['THLB_AREA_DECREASE']].sum().reset_index()
         
         df_rpdfog_kam_s2_sum.insert(1, 'SCENARIO', 'Scenario 2')  
         
@@ -353,7 +353,7 @@ if __name__ == "__main__":
     print ('\n Export summary tables') 
     dfs= [df_rpog_sum, df_rpdf_fnl, df_rpdfog_fn]
     datetime= datetime.now().strftime("%Y%m%d_%H%M")
-    outfile= os.path.join(wks, 'outputs', f'{datetime}_summary_tables_total_THLB_decrease.xlsx')
+    outfile= os.path.join(wks, 'outputs', f'{datetime}_summary_tables_total_THLB_decrease_v2_details.xlsx')
     write_dfs_to_excel(dfs, outfile)
     
 
