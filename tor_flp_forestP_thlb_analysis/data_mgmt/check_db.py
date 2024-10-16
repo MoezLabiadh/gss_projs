@@ -7,7 +7,7 @@ conn = duckdb.connect(db)
 conn.install_extension('spatial')
 conn.load_extension('spatial')
 
-#conn.execute("""DROP TABLE IF EXISTS r2_rip_overlap_ogda_thlb;""")
+conn.execute("""DROP TABLE IF EXISTS r2_2_rip_idf_ogda_thlb_mdwr;""")
 #conn.execute("""ALTER TABLE thlb_plan_areas RENAME TO thlb_QS;""")
 
 #conn.execute("""ALTER TABLE idf_thlb_tsa_mdwr DROP COLUMN IF EXISTS geometry;""")
@@ -19,8 +19,8 @@ conn.load_extension('spatial')
 
 tabs= conn.execute("""SHOW TABLES""").df()
 
-#sql= """SELECT* EXCLUDE geometry FROM r2_2_rip_idf_thlb_mdwr"""
-sql= """SELECT*  FROM r2_2_rip_idf_thlb_mdwr"""
+sql= """SELECT* EXCLUDE geometry FROM r2_2_rip_idf_ogda_thlb"""
+#sql= """SELECT*  FROM r2_2_rip_idf_ogda_thlb"""
 
 
 
