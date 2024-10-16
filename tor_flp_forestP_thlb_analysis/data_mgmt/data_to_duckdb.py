@@ -137,7 +137,7 @@ def add_data_to_duckdb(dckCnx, data_dict):
                 
         #Add a spatial index to the table
         print(f'....creating a spatial RTREE index')
-        dckCnx.execute(f'CREATE INDEX idx_{k} ON {k} USING RTREE (GEOMETRY);')
+        dckCnx.execute(f'CREATE INDEX idx_2_{k} ON {k} USING RTREE (GEOMETRY);')
 
         counter += 1
 
@@ -177,7 +177,7 @@ if __name__ == "__main__":
         #loc_dict['r2_2_rip_ogda']= os.path.join(gdb, 'r2_2_rip_ogda')
         #loc_dict['r2_2_rip_idf']= os.path.join(gdb, 'r2_2_rip_idf')
         #loc_dict['r2_2_rip_idf_ogda_thlb']= os.path.join(gdb, 'r2_2_rip_idf_ogda_thlb')
-        loc_dict['r2_2_rip_idf_thlb']= os.path.join(gdb, 'r2_2_rip_idf_thlb')
+        loc_dict['r2_2_rip_idf_ogda_thlb']= os.path.join(gdb, 'r2_2_rip_idf_ogda_thlb_new_attr')
         
         data_dict= {}
         
