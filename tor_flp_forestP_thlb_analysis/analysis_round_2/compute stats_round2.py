@@ -248,6 +248,8 @@ if __name__ == "__main__":
         ####### Okanagan scenarios #######
         df_rpdfog_okn= df_rpdfog[df_rpdfog['TSA_NAME']=='Okanagan TSA']
         
+        df_rpdfog_okn.to_csv(os.path.join(wks, 'outputs', 'resultant_idf_rip_ogda_okn_ALL.csv'), index=False)
+        
         df_rpdfog_okn = df_rpdfog_okn[
             ~df_rpdfog_okn['BEC_SUBZONE'].isin(['mw', 'mm']) | df_rpdfog_okn['BEC_SUBZONE'].isnull()
         ]
@@ -349,14 +351,23 @@ if __name__ == "__main__":
     finally: 
         Duckdb.disconnect_db()
         
-
+    
+    
+    df_rpdfog_kam_s2_nulls= df_rpdfog_kam_s2[
+        (df_rpdfog_kam_s2['BEC_SUBZONE'] != 'NN') &
+        (df_rpdfog_kam_s2['PROJ_AGE_1'].isnull())
+        ]
+    
+    
+    #df_rpdfog_kam_s2.to_csv(os.path.join(wks, 'outputs', 'resultant_idf_rip_ogda_scenario2_kam.csv'), index=False)
+    '''    
     print ('\n Export summary tables') 
     dfs= [df_rpog_sum, df_rpdf_fnl, df_rpdfog_fn]
     datetime= datetime.now().strftime("%Y%m%d_%H%M")
     outfile= os.path.join(wks, 'outputs', f'{datetime}_summary_tables_total_THLB_decrease_v2_details.xlsx')
     write_dfs_to_excel(dfs, outfile)
     
-
+    '''
 
     finish_t = timeit.default_timer() #finish time
     t_sec = round(finish_t-start_t)
