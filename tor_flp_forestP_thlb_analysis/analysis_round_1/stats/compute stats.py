@@ -170,6 +170,8 @@ if __name__ == "__main__":
         df_idf_omh = df_idf_omh[~df_idf_omh['BEC_SUBZONE'].isin(bec_excl)]
 
         
+
+
         ####### Okanagan scenarios #######
         df_idf_okn= df_idf[df_idf['TSA_NAME']=='Okanagan TSA']
         
@@ -321,7 +323,7 @@ if __name__ == "__main__":
     finally: 
         Duckdb.disconnect_db()
         
-   
+    '''
     print ('\n Export summary tables') 
     dfs= [df_idf_fnl, df_ogda_fnl, df_rip_fbp_fnl, df_rip_kam_fnl]
     datetime= datetime.now().strftime("%Y%m%d_%H%M")
@@ -343,7 +345,7 @@ if __name__ == "__main__":
     
     outfile_idf= os.path.join(wks, 'outputs', f'{datetime}_idf_data.xlsx')
     export_dfs_to_sheets(dataframes, sheet_names, outfile_idf)
-
+    '''
 
     finish_t = timeit.default_timer() #finish time
     t_sec = round(finish_t-start_t)
