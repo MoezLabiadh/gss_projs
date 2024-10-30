@@ -183,10 +183,17 @@ if __name__ == "__main__":
         df_rpdf_okn_fn = pd.concat([df_rpdf_okn_s1_sum, df_rpdf_okn_s2_sum], ignore_index=True)
         
 
+
+
+
           
         
         ####### Kamloops scenarios #######
+
         df_rpdf_kam= df_rpdf[df_rpdf['TSA_NAME']=='Kamloops TSA']
+        
+        
+        
         
         df_rpdf_kam = df_rpdf_kam[
             ~df_rpdf_kam['BEC_SUBZONE'].isin(['mw', 'mm']) | df_rpdf_kam['BEC_SUBZONE'].isnull()
@@ -379,14 +386,15 @@ if __name__ == "__main__":
         ]
     
     
-    #df_rpdfog_kam_s2.to_csv(os.path.join(wks, 'outputs', 'resultant_idf_rip_ogda_scenario2_kam.csv'), index=False)
+    df_rpdf_kam_s1.to_csv(os.path.join(wks, 'outputs', 'resultant_idf_rip_scenario1_kam_OLD.csv'), index=False)
  
+    '''    
     print ('\n Export summary tables') 
     dfs= [df_rpog_sum, df_rpdf_fnl, df_rpdfog_fn]
     datetime= datetime.now().strftime("%Y%m%d_%H%M")
     outfile= os.path.join(wks, 'outputs', f'{datetime}_summary_tables_total_THLB_decrease_v3_details.xlsx')
     write_dfs_to_excel(dfs, outfile)
-    
+    '''
 
 
     finish_t = timeit.default_timer() #finish time
