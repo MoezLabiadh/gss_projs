@@ -7,7 +7,7 @@ conn = duckdb.connect(db)
 conn.install_extension('spatial')
 conn.load_extension('spatial')
 
-conn.execute("""DROP TABLE IF EXISTS r2_2_rip_idf_ogda_thlb_mdwr;""")
+#conn.execute("""DROP TABLE IF EXISTS r2_2_KAM_rip_idf_ogda_thlb_mdwr;""")
 #conn.execute("""ALTER TABLE thlb_plan_areas RENAME TO thlb_QS;""")
 
 #conn.execute("""ALTER TABLE idf_thlb_tsa_mdwr DROP COLUMN IF EXISTS geometry;""")
@@ -19,7 +19,20 @@ conn.execute("""DROP TABLE IF EXISTS r2_2_rip_idf_ogda_thlb_mdwr;""")
 
 tabs= conn.execute("""SHOW TABLES""").df()
 
-sql= """SELECT* EXCLUDE geometry FROM r2_2_rip_idf_ogda_thlb"""
+'''
+sql2="""
+ALTER TABLE r2_2_KAM_rip_idf_ogda_thlb_mdwr
+ADD COLUMN AREA_HA DOUBLE;
+
+-- Update the AREA_HA column with the area in hectares
+UPDATE r2_2_KAM_rip_idf_ogda_thlb_mdwr
+SET AREA_HA = ST_Area(geometry) / 10000;
+"""
+
+conn.execute(sql2)
+'''
+
+sql= """SELECT* EXCLUDE geometry FROM r2_2_KAM_rip_idf_ogda_thlb_mdwr"""
 #sql= """SELECT*  FROM r2_2_rip_idf_ogda_thlb"""
 
 
