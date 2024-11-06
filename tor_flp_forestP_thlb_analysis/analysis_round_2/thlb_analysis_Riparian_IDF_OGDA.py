@@ -53,13 +53,13 @@ def load_dck_sql():
                  """   
     '''      
     ########### MDWR intersection ##############  
-    dkSql['r2_2_rip_idf_ogda_thlb_mdwr']="""
-        CREATE TABLE r2_2_rip_idf_ogda_thlb_mdwr AS
+    dkSql['r2_2_rip_idf_ogda_thlb_mdwr_geo']="""
+        CREATE TABLE r2_2_rip_idf_ogda_thlb_mdwr_geo AS
             SELECT 
               thlb.*,
               mdr.LEGAL_FEAT_PROVID AS MDWR_OVERLAP,
-              COALESCE(ST_Area(ST_Intersection(mdr.geometry, thlb.geometry)) / 10000.0, ST_Area(thlb.geometry) / 10000.0) AS AREA_HA
-              --COALESCE(ST_Intersection(mdr.geometry, thlb.geometry), thlb.geometry) AS geometry
+              COALESCE(ST_Area(ST_Intersection(mdr.geometry, thlb.geometry)) / 10000.0, ST_Area(thlb.geometry) / 10000.0) AS AREA_HA,
+              COALESCE(ST_Intersection(mdr.geometry, thlb.geometry), thlb.geometry) AS geometry
             FROM 
               r2_2_rip_idf_ogda_thlb thlb
             LEFT JOIN 
@@ -69,7 +69,8 @@ def load_dck_sql():
 
         
         -- Fix geometry field name
-        ALTER TABLE r2_2_rip_idf_ogda_thlb_mdwr DROP COLUMN IF EXISTS geometry;  
+        ALTER TABLE r2_2_rip_idf_ogda_thlb_mdwr_geo DROP COLUMN IF EXISTS geometry;  
+        ALTER TABLE r2_2_rip_idf_ogda_thlb_mdwr_geo RENAME COLUMN geometry_1 TO geometry; 
                     """ 
 
     return dkSql
