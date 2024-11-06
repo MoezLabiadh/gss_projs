@@ -19,21 +19,10 @@ conn.load_extension('spatial')
 
 tabs= conn.execute("""SHOW TABLES""").df()
 
-'''
-sql2="""
-ALTER TABLE r2_2_KAM_rip_idf_ogda_thlb_mdwr
-ADD COLUMN AREA_HA DOUBLE;
 
--- Update the AREA_HA column with the area in hectares
-UPDATE r2_2_KAM_rip_idf_ogda_thlb_mdwr
-SET AREA_HA = ST_Area(geometry) / 10000;
-"""
 
-conn.execute(sql2)
-'''
-
-sql= """SELECT* EXCLUDE geometry FROM r2_2_KAM_rip_idf_ogda_thlb_mdwr"""
-#sql= """SELECT*  FROM r2_2_rip_idf_ogda_thlb"""
+#sql= """SELECT* EXCLUDE geometry FROM r2_2_rip_idf_ogda_thlb_mdwr"""
+sql= """SELECT*  FROM r2_2_rip_idf_ogda_thlb_mdwr"""
 
 
 
