@@ -113,15 +113,14 @@ if __name__ == "__main__":
 
         #df_rpog= dckCnx.execute("""SELECT* FROM r2_2_rip_ogda_thlb""").df()
         df_rpog= dckCnx.execute(
-            """SELECT*
-                FROM r2_2_rip_idf_ogda_thlb_mdwr
-               WHERE OVERLAP_TYPE in ('OGDA only', 'IDF/OGDA overlap','Riparian only' ,'Riparian/IDF overlap' ,'Riparian/OGDA overlap', 'Riparian/IDF/OGDA overlap') 
+            """SELECT* Exclude geometry FROM r2_2_rip_ogda_thlb_mdwr_fullattr
                 
             """
             ).df()
         
         df_rpog = df_rpog.rename(columns={"TSA_NUMBER_DESCRIPTION": "TSA_NAME"})
         
+        '''
         conditions = [
             df_rpog['OVERLAP_TYPE'].isin(['OGDA only', 'IDF/OGDA overlap']),
             df_rpog['OVERLAP_TYPE'].isin(['Riparian only', 'Riparian/IDF overlap']),
@@ -131,7 +130,7 @@ if __name__ == "__main__":
         values = ['OGDA only', 'Riparian only', 'Riparian/OGDA overlap']
         
         df_rpog['OVERLAP_TYPE_2'] = np.select(conditions, values, default=np.nan)
-        
+        '''
         
         
         
@@ -149,15 +148,16 @@ if __name__ == "__main__":
         #df_rpdf= dckCnx.execute("""SELECT* FROM r2_2_rip_idf_thlb_mdwr""").df()
         
         df_rpdf= dckCnx.execute(
-            """SELECT*
-                FROM r2_2_rip_idf_ogda_thlb_mdwr
-               WHERE OVERLAP_TYPE in ('IDF only', 'IDF/OGDA overlap','Riparian only' ,'Riparian/OGDA overlap' ,'Riparian/IDF overlap', 'Riparian/IDF/OGDA overlap') 
+            """SELECT* Exclude geometry FROM r2_2_rip_idf_thlb_mdwr_fullattr
+
                 
             """
             ).df()
         
         df_rpdf = df_rpdf.rename(columns={"TSA_NUMBER_DESCRIPTION": "TSA_NAME"})
+        df_rpdf['PROJ_AGE_1'] = df_rpdf['PROJ_AGE_1'].replace(-999, np.nan)
         
+        '''
         conditions = [
             df_rpdf['OVERLAP_TYPE'].isin(['IDF only', 'IDF/OGDA overlap']),
             df_rpdf['OVERLAP_TYPE'].isin(['Riparian only', 'Riparian/OGDA overlap']),
@@ -168,7 +168,7 @@ if __name__ == "__main__":
         
         df_rpdf['OVERLAP_TYPE_2'] = np.select(conditions, values, default=np.nan)        
         
-        
+        '''
         df_rpdf['THLB_AREA']= df_rpdf['AREA_HA'] * df_rpdf['thlb_fact']
         
 
@@ -294,9 +294,10 @@ if __name__ == "__main__":
  
         print ('\nCompute RIP/IDF/OGDA summaries')
         
-        df_rpdfog= dckCnx.execute("""SELECT* FROM r2_2_rip_idf_ogda_thlb_mdwr""").df()
+        df_rpdfog= dckCnx.execute("""SELECT* Exclude geometry FROM r2_2_rip_idf_ogda_thlb_mdwr_fullattr""").df()
         
         df_rpdfog= df_rpdfog.rename(columns={'TSA_NUMBER_DESCRIPTION': 'TSA_NAME'})
+        df_rpdfog['PROJ_AGE_1'] = df_rpdfog['PROJ_AGE_1'].replace(-999, np.nan)
         
         df_rpdfog['THLB_AREA']= df_rpdfog['AREA_HA'] * df_rpdfog['thlb_fact']
         
