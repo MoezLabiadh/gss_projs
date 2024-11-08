@@ -178,7 +178,8 @@ if __name__ == "__main__":
         #loc_dict['r2_2_rip_idf']= os.path.join(gdb, 'r2_2_rip_idf')
         #loc_dict['r2_2_rip_idf_ogda_thlb']= os.path.join(gdb, 'r2_2_rip_idf_ogda_thlb')
         #loc_dict['r2_2_KAM_rip_idf_thlb_mdwr']= os.path.join(gdb, 'r2_2_KAM_rip_idf_thlb_mdwr_fn_v2')
-        loc_dict['r2_2_KAM_rip_idf_ogda_thlb_mdwr']= os.path.join(gdb, 'r2_2_KAM__rip_idf_ogda_thlb_mdwr_fn')
+        #loc_dict['r2_2_KAM_rip_idf_ogda_thlb_mdwr']= os.path.join(gdb, 'r2_2_KAM__rip_idf_ogda_thlb_mdwr_fn')
+        loc_dict['r2_2_rip_idf_ogda_thlb_fullattr']= os.path.join(gdb, 'r2_2_rip_idf_ogda_thlb_new')
         
         data_dict= {}
         
