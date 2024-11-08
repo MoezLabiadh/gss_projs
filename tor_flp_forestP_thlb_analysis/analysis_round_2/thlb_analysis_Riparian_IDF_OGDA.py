@@ -53,15 +53,15 @@ def load_dck_sql():
                  """   
     '''      
     ########### MDWR intersection ##############  
-    dkSql['r2_2_rip_idf_ogda_thlb_mdwr_geo']="""
-        CREATE TABLE r2_2_rip_idf_ogda_thlb_mdwr_geo AS
+    dkSql['r2_2_rip_idf_ogda_thlb_mdwr_fullattr']="""
+        CREATE TABLE r2_2_rip_idf_ogda_thlb_mdwr_fullattr AS
             SELECT 
               thlb.*,
               mdr.LEGAL_FEAT_PROVID AS MDWR_OVERLAP,
               COALESCE(ST_Area(ST_Intersection(mdr.geometry, thlb.geometry)) / 10000.0, ST_Area(thlb.geometry) / 10000.0) AS AREA_HA,
               COALESCE(ST_Intersection(mdr.geometry, thlb.geometry), thlb.geometry) AS geometry
             FROM 
-              r2_2_rip_idf_ogda_thlb thlb
+              r2_2_rip_idf_ogda_thlb_fullattr thlb
             LEFT JOIN 
               mdwr_kam mdr
             ON 
@@ -69,8 +69,11 @@ def load_dck_sql():
 
         
         -- Fix geometry field name
-        ALTER TABLE r2_2_rip_idf_ogda_thlb_mdwr_geo DROP COLUMN IF EXISTS geometry;  
-        ALTER TABLE r2_2_rip_idf_ogda_thlb_mdwr_geo RENAME COLUMN geometry_1 TO geometry; 
+        ALTER TABLE r2_2_rip_idf_ogda_thlb_mdwr_fullattr DROP COLUMN IF EXISTS geometry;  
+        ALTER TABLE r2_2_rip_idf_ogda_thlb_mdwr_fullattr RENAME COLUMN geometry_1 TO geometry; 
+        
+        -- Build a spatial index
+        CREATE INDEX idx_r2_2_rip_idf_ogda_thlb_mdwr_fullattr ON r2_2_rip_idf_ogda_thlb_mdwr_fullattr USING RTREE (geometry);
                     """ 
 
     return dkSql
