@@ -21,7 +21,7 @@ tabs= conn.execute("""SHOW TABLES""").df()
 
 
 
-sql= """SELECT* EXCLUDE geometry FROM r2_2_rip_idf_thlb_mdwr_fullattr"""
+sql= """SELECT* EXCLUDE geometry FROM r2_2_rip_thlb_mdwr_fullattr"""
 #sql= """SELECT*  FROM r2_2_rip_idf_ogda_thlb_mdwr"""
 
 
