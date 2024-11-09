@@ -140,9 +140,8 @@ if __name__ == "__main__":
         
         #df_ogda= dckCnx.execute("""SELECT* EXCLUDE geometry FROM ogda_thlb_tsa""").df()
         df_ogda= dckCnx.execute(
-            """SELECT*
-                FROM r2_2_rip_idf_ogda_thlb_mdwr
-               WHERE OVERLAP_TYPE in ('OGDA only', 'IDF/OGDA overlap', 'Riparian/OGDA overlap', 'Riparian/IDF/OGDA overlap') 
+            """SELECT* Exclude geometry
+                FROM r2_2_ogda_thlb_mdwr_fullattr 
                 
             """
             ).df()
@@ -170,9 +169,8 @@ if __name__ == "__main__":
         
         #df_idf= dckCnx.execute("""SELECT* EXCLUDE geometry FROM idf_thlb_tsa_mdwr""").df()
         df_idf= dckCnx.execute(
-            """SELECT*
-                FROM r2_2_rip_idf_ogda_thlb_mdwr
-               WHERE OVERLAP_TYPE in ('IDF only', 'IDF/OGDA overlap', 'Riparian/IDF overlap', 'Riparian/IDF/OGDA overlap') 
+            """SELECT* Exclude geometry
+                FROM r2_2_idf_thlb_mdwr_fullattr 
                 
             """
             ).df()
@@ -306,9 +304,8 @@ if __name__ == "__main__":
         
         #df_rip_fbp= dckCnx.execute("""SELECT* EXCLUDE geometry FROM rip_fbp_thlb_tsa""").df()
         df_rip_fbp= dckCnx.execute(
-            """SELECT*
-                FROM r2_2_rip_idf_ogda_thlb_mdwr
-               WHERE OVERLAP_TYPE in ('Riparian only', 'Riparian/IDF overlap', 'Riparian/OGDA overlap', 'Riparian/IDF/OGDA overlap') 
+            """SELECT* Exclude geometry
+                FROM r2_2_rip_thlb_mdwr_fullattr 
                 
             """
             ).df()
@@ -353,7 +350,7 @@ if __name__ == "__main__":
     finally: 
         Duckdb.disconnect_db()
         
-
+    ''' 
     print ('\n Export summary tables') 
     dfs= [df_idf_fnl, df_ogda_fnl, df_rip_fbp_fnl, df_rip_kam_fnl]
     datetime= datetime.now().strftime("%Y%m%d_%H%M")
@@ -361,7 +358,7 @@ if __name__ == "__main__":
     write_dfs_to_excel(dfs, outfile)
     
 
-    ''' 
+
     print ('\n Export IDF datasets') 
     dataframes=[df_idf_kam_s1,
                 df_idf_kam_s2,
