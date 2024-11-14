@@ -27,7 +27,7 @@ class DuckDBConnector:
 
 def load_dck_sql():
     dkSql= {}
-   
+    '''
     dkSql['r3_vri_thlb']="""
          CREATE TABLE r3_vri_thlb AS
              SELECT 
@@ -51,7 +51,62 @@ def load_dck_sql():
         CREATE INDEX idx_r3_vri_thlb ON r3_vri_thlb USING RTREE (geometry);
                  """   
 
+    dkSql['r3_rip_vri_thlb']="""
+         CREATE TABLE r3_rip_vri_thlb AS
+             SELECT 
 
+               thlb.TSA_NAME,
+               thlb.thlb_fact,
+               thlb.BEC_ZONE_CODE,
+               thlb.BEC_SUBZONE,
+               thlb.PROJ_AGE_1,
+               thlb.LIVE_STAND_VOLUME_125,
+               rip.OVERLAP_TYPE,
+               ST_Area(ST_Intersection(thlb.geometry, rip.geometry)) / 10000.0 AS AREA_HA,
+               ST_Intersection(thlb.geometry, rip.geometry) AS geometry
+               
+             FROM 
+                 r3_vri_thlb thlb
+             JOIN 
+                r2_2_rip_thlb_mdwr_fullattr rip 
+             ON 
+                 ST_Intersects(thlb.geometry, rip.geometry); 
+
+        -- Build a spatial index
+        CREATE INDEX idx_r3_rip_vri_thlb ON r3_rip_vri_thlb USING RTREE (geometry);
+                 """ 
+   
+                 
+   
+    '''
+
+    dkSql['r3_idf_vri_thlb']="""
+         CREATE TABLE r3_idf_vri_thlb AS
+             SELECT 
+               thlb.TSA_NAME,
+               thlb.thlb_fact,
+               thlb.BEC_ZONE_CODE,
+               thlb.BEC_SUBZONE,
+               thlb.PROJ_AGE_1,
+               thlb.LIVE_STAND_VOLUME_125,
+               idf.OVERLAP_TYPE,
+               idf.MDWR_OVERLAP,
+               ST_Area(ST_Intersection(idf.geometry, thlb.geometry)) / 10000.0 AS AREA_HA,
+               ST_Intersection(idf.geometry, thlb.geometry) AS geometry
+               
+             FROM 
+                 r2_2_idf_thlb_mdwr_fullattr idf 
+             JOIN 
+                 r3_vri_thlb thlb
+                
+             ON 
+                 ST_Intersects(idf.geometry, thlb.geometry); 
+
+        -- Build a spatial index
+        CREATE INDEX idx_r3_idf_vri_thlb ON r3_idf_vri_thlb USING RTREE (geometry);
+                     """                         
+
+                 
     return dkSql
 
 
