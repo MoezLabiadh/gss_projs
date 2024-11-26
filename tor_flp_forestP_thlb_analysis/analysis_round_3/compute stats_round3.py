@@ -117,7 +117,6 @@ if __name__ == "__main__":
 
         '''
 
-
         print ('\nCompute IDF summaries')
         
         df_idf= dckCnx.execute("""SELECT* EXCLUDE geometry FROM r3_idf_vri_thlb WHERE BEC_ZONE_CODE='IDF'""").df()
@@ -243,7 +242,7 @@ if __name__ == "__main__":
                     'CURRENT_THLB_GROWING_STOCK_M3', 'FBP_THLB_GROWING_STOCK_M3', 'CHANGE_GROWING_STOCK_M3']
 
         df_idf_fn = df_idf_fn[col_order]
-        
+
         
         print ('\nCompute Riparian summary')
         
@@ -254,7 +253,12 @@ if __name__ == "__main__":
         df_rip['AGE_CLASS'] = pd.cut(df_rip['PROJ_AGE_1'], bins=bins, labels=labels, right=True)
 
         
-        df_rip['FBP_THLB_HA'] = df_rip['AREA_HA'] * df_rip['thlb_fact']    
+        df_rip['FBP_THLB_HA'] = df_rip['AREA_HA'] * df_rip['thlb_fact']   
+        
+        
+        df_rip['AGE_CLASS'] = df_rip['AGE_CLASS'].cat.add_categories("NO_DATA")
+        df_rip.loc[df_rip['AGE_CLASS'].isnull(), ['AGE_CLASS', 'LIVE_STAND_VOLUME_125']] = ["NO_DATA", 0]
+        
         
         df_rip['FBP_THLB_GROWING_STOCK_M3'] = df_rip['FBP_THLB_HA'] * df_rip['LIVE_STAND_VOLUME_125']
                 
@@ -273,6 +277,9 @@ if __name__ == "__main__":
         df_rslt= pd.concat([df_idf_fn, df_rip_sum], ignore_index=True)
         df_rslt = df_rslt.round(2)
         
+        
+        
+        '''
         ########### RAW DATA ###################
         df_rw_idf= pd.concat([df_idf_okn_s1, df_idf_okn_s2, df_idf_kam_s1, df_idf_kam_s2], ignore_index=True)
         
@@ -287,6 +294,7 @@ if __name__ == "__main__":
                'LIVE_STAND_VOLUME_125', 'AREA_HA','FBP_THLB_HA', 'FBP_THLB_GROWING_STOCK_M3']
         
         df_rw_rip = df_rip[cols_rip]
+        '''
         
    
     except Exception as e:
@@ -295,13 +303,14 @@ if __name__ == "__main__":
     finally: 
         Duckdb.disconnect_db()
         
-    '''
+ 
     
     print ('\n Export summary tables') 
     dfs= [df_rslt]
     sheets= ['vri_summary']
     
     outfile= os.path.join(wks, 'outputs')
+    datetime= datetime.now().strftime("%Y%m%d_%H%M")
     generate_report (outfile, dfs, sheets, f'{datetime}_summary_growing_stock.xlsx')
     
 
@@ -310,7 +319,7 @@ if __name__ == "__main__":
     datetime= datetime.now().strftime("%Y%m%d_%H%M")
     df_rw_idf.to_csv(os.path.join(wks, 'outputs', f'{datetime}_raw_data_growing_stock_IDF.csv'), index=False)
     df_rw_rip.to_csv(os.path.join(wks, 'outputs', f'{datetime}_raw_data_growing_stock_RIPARIAN.csv'), index=False)
-
+    '''
  
 
     finish_t = timeit.default_timer() #finish time
