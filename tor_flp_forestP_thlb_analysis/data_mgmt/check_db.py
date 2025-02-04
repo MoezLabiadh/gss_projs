@@ -23,11 +23,18 @@ tabs= conn.execute("""SHOW TABLES""").df()
 
 
 
-sql= """SELECT* EXCLUDE geometry FROM r3_idf_vri_thlb"""
+sql= """SELECT* EXCLUDE geometry FROM r3_rip_vri_thlb"""
 #sql= """SELECT*  FROM r2_2_rip_idf_ogda_thlb_mdwr"""
 
 
 df= conn.execute(sql).df()
+
+df['FBP_THLB_HA'] = df['AREA_HA'] * df['thlb_fact']   
+
+df_gr = df.groupby(
+                ['TSA_NAME']
+                )[['FBP_THLB_HA']].sum().reset_index()
+
 
 
 conn.close()
