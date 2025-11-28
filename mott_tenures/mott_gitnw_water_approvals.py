@@ -112,6 +112,7 @@ if __name__ == "__main__":
          WHSE_WATER_MANAGEMENT.WLS_WATER_APPROVALS_GOV_SVW wtr
     WHERE 
         wtr.CLIENT_NAME LIKE '%Ministry of Transportation%'
+        AND wtr.APPROVAL_STATUS = 'Current' 
         AND SDO_RELATE (wtr.SHAPE, SDO_GEOMETRY(:wkb_aoi, :srid),'mask=ANYINTERACT') = 'TRUE'
     """
 
